@@ -1,9 +1,9 @@
 % This is the folder at the scanner that we can see dicoms in.
-sourcePath = 'E:\neurofeedback_test\data\testdata\dicom_source';
+sourcePath = 'F:\dicom_source';
 
 % This is the folder on Geoff's computer we want to save the dicom.
 dicomPath = 'E:\neurofeedback_test\data\testdata\dicom_target\';
-%cd(targetpath);
+%cd(dicomPath);
 
 niftiPath = 'E:\neurofeedback_test\data\testdata\niftis\';
 
@@ -55,8 +55,8 @@ for i = 1:testLength
 
     
     % Step 2. Convert DICOM to NIFTI (.nii) and load NIFTI into Matlab
-    dicm2nii(targetDicom,niftipath,0);
-    targetNifti = load_untouch_nii(fullfile(niftipath,'BOLD_RUN1.nii'));
+    dicm2nii(targetDicom,niftiPath,0);
+    targetNifti = load_untouch_nii(fullfile(niftiPath,'BOLD_RUN1.nii'));
     targetIm = targetNifti.img;
 
     
