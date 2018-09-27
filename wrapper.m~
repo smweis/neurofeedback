@@ -13,12 +13,12 @@ acqTime = repmat(datetime,1000,1);
 dataTimepoint = repmat(datetime,1000,1);
 v1Signal = repmat(1000,1);
 
-% load the v1 ROI (which has already been processed in fsl)
+%load the v1 ROI (which has already been processed in fsl)
 load_roi
 
-% initialize figure
+% in
 figure;
 
 
-% run the main feedback
+
 check_for_new_dicom

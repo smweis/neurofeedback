@@ -23,8 +23,8 @@ function check_for_new_dicom()
             
             
             nameStr = dir_files(end).name;
-            pathStr = dir_files.folder;
-            [acqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(nameStr,pathStr);
+            pathStr = dir_files.file;
+            [acqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(dir(end).name,dir(end).file);
 
 
             plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);    
