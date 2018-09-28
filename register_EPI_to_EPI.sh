@@ -7,13 +7,13 @@
 # bash register_EPI_to_EPI.sh AP
 
 #FILL IN DIRECTORY HERE
-olddir='/Users/iron/Documents/neurofeedback/TOME_3040';
+olddir='/Users/iron/Documents/neurofeedback/TOME_3040/';
 
 
 #FILL IN DIRECTORY HERE
-newdir='PUT IN NEW file dir NAME HERE'/data/jux/sweisberg/neurofeedback/templates;
+newdir='/Users/iron/Documents/neurofeedback/TOME_3040/';
 
-newNifti=new"$1".nii
+newNifti=new"$1".nii.gz
 
 #extract brain  new file
 
@@ -26,7 +26,7 @@ bet $newdir/$newNifti $newdir/$newNifti
 ##########################
 
 # register first volume of old functional scan to new functional scan
-flirt -in $olddir/"$1"_first_volume.nii -ref $newdir/$newNifti -omat new2old"$1".mat -bins 256 -cost corratio -searchrx -180 180 -searchry -180 180 -searchrz -180 180 -dof 6
+flirt -in $olddir/"$1"_first_volume.nii.gz -ref $newdir/$newNifti -omat new2old"$1".mat -bins 256 -cost corratio -searchrx -180 180 -searchry -180 180 -searchrz -180 180 -dof 6
 
 # apply registration to kastner parcel(s)
-flirt -in $olddir/V1_TO_"$1".nii -ref "$1"_first_volume.nii -out $newdir/V1_TO_new"$1".nii -applyxfm -init new2old"$1".mat -interp trilinear
+flirt -in $olddir/V1_TO_"$1".nii.gz -ref "$1"_first_volume.nii.gz -out $newdir/V1_TO_new"$1".nii.gz -applyxfm -init new2old"$1".mat -interp trilinear
