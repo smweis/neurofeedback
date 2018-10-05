@@ -13,12 +13,10 @@ dicm2nii(strcat(dicomPath,'/',niftiName),newNiftiPath,0);
 newNiftiName = dir(strcat(newNiftiPath,'/*.nii'));
 newNiftiName = strcat(newNiftiPath,'/',newNiftiName.name);
 targetNifti = load_untouch_nii(newNiftiName);
-
 targetIm = targetNifti.img;
 
 % Step 2. Compute mean from v1 ROI, then plot it against a timestamp
 v1Signal = mean(targetIm(v1Index));
-    
 dataTimepoint = datetime;
 
 

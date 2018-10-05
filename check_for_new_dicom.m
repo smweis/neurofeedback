@@ -1,32 +1,40 @@
 function check_for_new_dicom()
 
 
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % FILL IN SCANNER PATH HERE!!!!%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    scanner_path = '/Volumes/rtexport/RTexport_Current/20180928.819931_TOME_3040_398782.18.09.28_08_11_04_DST_1.3.12.2.1107.5.2.43.66044/'; % FILL IN SCANNER PATH HERE
+    
+    
+    
     global iteration
     global acqTime
     global v1Signal
     global dataTimepoint
 
 
-    path_to_watch = '/Volumes/rtexport/RTexport_Current/20180928.819931_TOME_3040_398782.18.09.28_08_11_04_DST_1.3.12.2.1107.5.2.43.66044/'; % FILL IN SCANNER PATH HERE
-    initial_dir_length = length(dir(path_to_watch));
+    
+    %initialize to # of files in scanner_path
+    initial_dir = dir(scanner_path);
 
     i=0;
     while i<10000000
         i = i+1;
-        new_dir_length = length(dir(path_to_watch));
-        if new_dir_length > initial_dir_length
+        new_dir = dir(scanner_path); % check files in scanner_path
+        if length(new_dir) > length(initial_dir) % if there's a new file
             tic % start timer
 
-            dir_files = dir(path_to_watch);
-            initial_dir_length = length(dir_files);
+            initial_dir = new_dir; % reset # of files
 
 
-            nameStr = dir_files(end).name;
-            pathStr = dir_files.folder;
-            [acqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(nameStr,pathStr);
+            new_dicom_name = new_dir(end).name; % get new name of file
+            new_dicom_path = new_dir.folder; % get path to file
+            
+            % run plot
+            [acqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(new_dicom_name,new_dicom_path);
 
-
+            % plot the time point
             plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);
             hold on;
 

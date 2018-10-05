@@ -1,5 +1,8 @@
 % Change path to where NIFTIs will be stored on Macbook
 global niftiPath
+
+
+
 niftiPath = '/Users/iron/Documents/neurofeedback/TOME_3040/niftis';
 % initialize some global variables
 global iteration
@@ -9,9 +12,9 @@ global acqTime
 global v1Signal
 global dataTimepoint
 
-acqTime = repmat(datetime,1000,1);
-dataTimepoint = repmat(datetime,1000,1);
-v1Signal = repmat(1000,1);
+acqTime = repmat(datetime,10000,1);
+dataTimepoint = repmat(datetime,10000,1);
+v1Signal = repmat(10000,1);
 
 % load the v1 ROI (which has already been processed in fsl)
 load_roi
@@ -20,5 +23,5 @@ load_roi
 figure;
 
 
-% run the main feedback
+% run the main script
 check_for_new_dicom
