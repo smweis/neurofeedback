@@ -59,7 +59,9 @@ function check_for_new_dicom(subject)
     system(cmdStr);
         
         
-
+    load(fullfile(new_dicom_name,'dcmHeaders.mat'),'h');
+    subHName = fieldnames(h);
+    initialDicomAcqTime = str2double(h.(subHName{1}).AcquisitionTime);
 
     % load the v1 ROI
     v1Index = load_roi(ap_or_pa);
@@ -70,12 +72,15 @@ function check_for_new_dicom(subject)
     global acqTime
     global v1Signal
     global dataTimepoint
-
+    global dicomAcqTime
 
     
     %initialize to # of files in scanner_path
     initial_dir = dir(scanner_path);
 
+    
+    
+    
     i=0;
     while i<10000000
         i = i+1;
@@ -89,13 +94,17 @@ function check_for_new_dicom(subject)
             new_dicom_name = new_dir(end).name; % get new name of file
             new_dicom_path = new_dir.folder; % get path to file
             
+            
+            
+            
             % run plot
-            [acqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(new_dicom_name,new_dicom_path,v1Index);
+            [acqTime(iteration),dicomAcqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(new_dicom_name,new_dicom_path,v1Index);
 
             % plot the time point
             plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);
             hold on;
-
+            
+            str2double(datestr(dataTimepoint(iteration),'hhmmss.fff')) - dicomAcqTime(iteration)
 
             toc % end timer
 

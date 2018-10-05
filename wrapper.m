@@ -14,11 +14,12 @@ iteration = 1;
 global acqTime
 global v1Signal
 global dataTimepoint
+global dicomAcqTime
 
 acqTime = repmat(datetime,10000,1);
 dataTimepoint = repmat(datetime,10000,1);
 v1Signal = repmat(10000,1);
-
+dicomAcqTime = repmat(10000,1);
 
 
 % initialize figure

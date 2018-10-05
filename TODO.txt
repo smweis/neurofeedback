@@ -3,13 +3,7 @@
 Acquire crossover ethernet cable - GKA will do.
 
 ## Scripting
-Fix registration script to be automatic
-Register to first volume of each RUN
-Print out lag for each scan (somehow acquire time stamp, prep script to get T's)
 Fix to read-only account
+Check that we are registering to the first dicom
 
-
-## Software installation
-Install toolbox toolbox
-Install QuestPlus
 
