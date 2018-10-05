@@ -37,7 +37,7 @@ flirt -in $templatedir/kastner_v1lh_10.nii -ref "$i"_first_volume.nii -out V1_TO
 
 
 #binarize mask
-fslmaths V1_TO_"$i".nii V1_TO_"$i"_bin.nii
+fslmaths V1_TO_"$i".nii -bin V1_TO_"$i"_bin.nii
 
 done
 

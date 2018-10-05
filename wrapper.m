@@ -1,9 +1,12 @@
 % Change path to where NIFTIs will be stored on Macbook
-global niftiPath
+global subjectPath
+
+subject = input('Subject number?','s');
+
+subjectPath = strcat('/Users/iron/Documents/neurofeedback/Current_Subject/TOME_',subject);
 
 
 
-niftiPath = '/Users/iron/Documents/neurofeedback/TOME_3040/niftis';
 % initialize some global variables
 global iteration
 iteration = 1;
@@ -16,12 +19,11 @@ acqTime = repmat(datetime,10000,1);
 dataTimepoint = repmat(datetime,10000,1);
 v1Signal = repmat(10000,1);
 
-% load the v1 ROI (which has already been processed in fsl)
-load_roi
+
 
 % initialize figure
 figure;
 
 
 % run the main script
-check_for_new_dicom
+check_for_new_dicom(subject)

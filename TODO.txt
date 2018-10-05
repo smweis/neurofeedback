@@ -6,7 +6,6 @@ Acquire crossover ethernet cable - GKA will do.
 Fix registration script to be automatic
 Register to first volume of each RUN
 Print out lag for each scan (somehow acquire time stamp, prep script to get T's)
-Detect if the scan is AP/PA (maybe in the DICOM header). 
 Fix to read-only account
 
 

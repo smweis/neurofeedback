@@ -1,17 +1,16 @@
-function [acqTime, v1Signal, dataTimepoint] = plot_at_scanner(niftiName,dicomPath)
+function [acqTime, v1Signal, dataTimepoint] = plot_at_scanner(niftiName,dicomPath,v1Index)
 
 
-global v1Index
-global niftiPath
+global subjectPath
 
 acqTime = datetime; %save timepoint  
 
-newNiftiPath = strcat(niftiPath,'/',niftiName);
+newNiftiPath = fullfile(subjectPath,'niftis',niftiName);
 
 % Step 1. Convert DICOM to NIFTI (.nii) and load NIFTI into Matlab
-dicm2nii(strcat(dicomPath,'/',niftiName),newNiftiPath,0);
+dicm2nii(fullfile(dicomPath,niftiName),newNiftiPath,0);
 newNiftiName = dir(strcat(newNiftiPath,'/*.nii'));
-newNiftiName = strcat(newNiftiPath,'/',newNiftiName.name);
+newNiftiName = fullfile(newNiftiPath,newNiftiName.name);
 targetNifti = load_untouch_nii(newNiftiName);
 targetIm = targetNifti.img;
 
