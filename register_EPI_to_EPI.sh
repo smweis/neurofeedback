@@ -1,15 +1,15 @@
 # This script will take a participant's AP/PA bold scans and register a parcel to a sample scan.
 # Step 1. Transfer V1_TO_PA.nii.gz, V1_TO_AP.nii.gz, AP_first_volume.nii.gz, PA_first_volume.nii.gz to the neurofeedback comp.
 # Step 2. Execute this (run from matlab script) with required variables, scan direction (AP or PA) and subj. number
-#           bash register_EPI_to_EPI.sh AP 3040
+#           bash register_EPI_to_EPI.sh AP TOME_3040
 
 
 
 
 #FILL IN SUBJECT NUMBER AT END OF THIS PATH HERE
-subject_dir="/Users/iron/Documents/neurofeedback/Current_Subject/TOME_${2}"
+subject_dir="/Users/iron/Documents/neurofeedback/Current_Subject/${2}"
 
- 
+
 newNifti=new"$1".nii
 
 #extract brain  new file

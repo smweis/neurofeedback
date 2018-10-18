@@ -9,8 +9,8 @@ function check_for_new_dicom(subject)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % FILL IN SCANNER PATH HERE!!!!%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %scanner_path = '/Volumes/rtexport/RTexport_Current/20180928.819931_TOME_3040_398782.18.09.28_08_11_04_DST_1.3.12.2.1107.5.2.43.66044/'; % FILL IN SCANNER PATH HERE
-    scanner_path = '/Users/iron/Documents/neurofeedback/fake_dicoms/20180928.819931_TOME_3040_398782.18.09.28_08_11_04_DST_1.3.12.2.1107.5.2.43.66044';
+    scanner_path = '/Volumes/rtexport/RTexport_Current/20180928.819931_TOME_3040_398782.18.09.28_08_11_04_DST_1.3.12.2.1107.5.2.43.66044/'; % FILL IN SCANNER PATH HERE
+    %scanner_path = '/Users/iron/Documents/neurofeedback/fake_dicoms/20180928.819931_TOME_3040_398782.18.09.28_08_11_04_DST_1.3.12.2.1107.5.2.43.66044';
 
 
 
@@ -25,7 +25,7 @@ function check_for_new_dicom(subject)
         initial_dir = dir(scanner_path);
 
         i=0;
-        while i<10000000
+        while i<10000000000
             i = i+1;
             new_dir = dir(scanner_path); % check files in scanner_path
             if length(new_dir) > length(initial_dir) % if there's a new file
@@ -85,7 +85,7 @@ function check_for_new_dicom(subject)
 
 
     i=0;
-    while i<10000000
+    while i<10000000000
         i = i+1;
         new_dir = dir(scanner_path); % check files in scanner_path
         if length(new_dir) > length(initial_dir) % if there's a new file
