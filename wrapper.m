@@ -3,7 +3,7 @@ global subjectPath
 
 subject = input('Subject number?','s');
 
-subjectPath = strcat('/Users/iron/Documents/neurofeedback/Current_Subject/TOME_',subject);
+subjectPath = strcat('/Users/iron/Documents/neurofeedback/Current_Subject/',subject);
 
 
 

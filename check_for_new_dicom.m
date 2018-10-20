@@ -6,29 +6,27 @@ function check_for_new_dicom(subject)
     curpath = getenv('PATH');
     setenv('PATH',sprintf('%s:%s',fullfile(fsl_path,'bin'),curpath));
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % FILL IN SCANNER PATH HERE!!!!%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Fill in Scanner Path
+
     scanner_path = '/Volumes/rtexport/RTexport_Current/20180928.819931_TOME_3040_398782.18.09.28_08_11_04_DST_1.3.12.2.1107.5.2.43.66044/'; % FILL IN SCANNER PATH HERE
-    %scanner_path = '/Users/iron/Documents/neurofeedback/fake_dicoms/20180928.819931_TOME_3040_398782.18.09.28_08_11_04_DST_1.3.12.2.1107.5.2.43.66044';
-
-
-
-    trigger = input('Waiting for trigger...','s');
 
     global subjectPath
 
+    
+    %% Check for trigger
+    trigger = input('Waiting for trigger...','s');
+    
     if strcmp(trigger,'t')
-
-        first_trigger_time = datetime;
-
-        initial_dir = dir(scanner_path);
+        first_trigger_time = datetime; % save initial time stamp
+        initial_dir = dir([scanner_path '*00001.dcm']); % count all the FIRST DICOMS in the directory
+        
+    %% Check for first DICOM Loop
 
         i=0;
         while i<10000000000
             i = i+1;
-            new_dir = dir(scanner_path); % check files in scanner_path
-            if length(new_dir) > length(initial_dir) % if there's a new file
+            new_dir = dir([scanner_path '*00001.dcm']); % check files in scanner_path
+            if length(new_dir) > length(initial_dir) % if there's a new FIRST DICOM
 
                 reg_dicom_name = initial_dir(end).name;
                 reg_dicom_path = initial_dir(end).folder;
@@ -39,6 +37,8 @@ function check_for_new_dicom(subject)
         end
     end
 
+    %% Complete Registration to First DICOM
+    
     % get AP or PA automatically from the name of the run
     ap_check = strfind(reg_dicom_name,'AP');
     if ap_check
@@ -55,9 +55,11 @@ function check_for_new_dicom(subject)
     old_dicom_name = old_dicom_dir.name;
     old_dicom_folder = old_dicom_dir.folder;
     copyfile(fullfile(old_dicom_folder,old_dicom_name),strcat(subjectPath,'/new',ap_or_pa,'.nii.gz'));
+    
     % grab path to the bash script for registering to the new DICOM
     pathToRegistrationScript = fullfile(pwd,'register_EPI_to_EPI.sh');
-    % run script name as: register_EPI_to_EPI.sh AP 3040
+    
+    % run registration script name as: register_EPI_to_EPI.sh AP TOME_3040
     cmdStr = [pathToRegistrationScript ' ' ap_or_pa ' ' subject];
     system(cmdStr);
 
@@ -66,7 +68,9 @@ function check_for_new_dicom(subject)
     subHName = fieldnames(h);
     initialDicomAcqTime = str2double(h.(subHName{1}).AcquisitionTime);
 
-    % load the v1 ROI
+    %% Main Neurofeedback Loop
+    
+    % Load the V1 ROI
     v1Index = load_roi(ap_or_pa);
 
 

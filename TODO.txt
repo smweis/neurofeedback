@@ -4,6 +4,5 @@ Acquire crossover ethernet cable - GKA will do.
 
 ## Scripting
 Fix to read-only account
-Check that we are registering to the first dicom
 
 
