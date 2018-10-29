@@ -75,7 +75,10 @@ function check_for_new_dicom(subject,which_run)
     %% Main Neurofeedback Loop
     
     %%% Load the ROI HERE! 
+    
+    
     v1Index = load_roi(ap_or_pa);
+
     %%% Load the ROI ABOVE!
     
     
@@ -91,13 +94,6 @@ function check_for_new_dicom(subject,which_run)
     initial_dir = dir(scanner_path);
 
 
-    
-    
-    % Should build in TWO settings. One setting should allow you to get the
-    % latest DICOM. The other setting should collect all DICOMs and process
-    % them as fast as you can. 
-    
-    
 
 
     i=0;

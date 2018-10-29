@@ -4,5 +4,5 @@ Acquire crossover ethernet cable - GKA will do.
 
 ## Scripting
 Fix to read-only account
-
-
+Figure out how to addpaths automatically with toolbox
+Make sure that the DICOM I'm registering to is the FIRST dicom. (This is buggy right now)

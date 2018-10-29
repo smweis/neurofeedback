@@ -2,6 +2,7 @@
 global subjectPath
 
 subject = input('Subject number?','s');
+run = input('Which run?','s');
 
 subjectPath = strcat('/Users/iron/Documents/neurofeedback/Current_Subject/',subject);
 
@@ -15,6 +16,7 @@ global acqTime
 global v1Signal
 global dataTimepoint
 global dicomAcqTime
+global first_trigger_time
 
 acqTime = repmat(datetime,10000,1);
 dataTimepoint = repmat(datetime,10000,1);
@@ -27,4 +29,4 @@ figure;
 
 
 % run the main script
-check_for_new_dicom(subject)
+check_for_new_dicom(subject,run)
