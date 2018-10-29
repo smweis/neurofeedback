@@ -1,12 +1,14 @@
-function v1Index = load_roi(ap_or_pa)
+function ROIIndex = load_roi(subject,ap_or_pa)
 
 
 
 
-global subjectPath
 
-% This is where you will load the Nifti file that is V1_TO_new[PA,AP]_bin.nii
-roiPath = strcat(subjectPath,'/V1_TO_new',ap_or_pa,'_bin.nii.gz');
+subjectPath = getpref('neurofeedback','currentSubjectBasePath');
+subjectPath = [subjectPath filesep subject];
+
+% This is where you will load the Nifti file that is ROI_to_new[PA,AP]_bin.nii
+roiPath = strcat(subjectPath,'/ROI_to_new',ap_or_pa,'_bin.nii.gz');
 roiNifti = load_untouch_nii(roiPath);
-v1Index = roiNifti.img;
-v1Index = logical(v1Index);
+ROIIndex = roiNifti.img;
+ROIIndex = logical(ROIIndex);

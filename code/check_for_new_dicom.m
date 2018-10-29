@@ -1,5 +1,5 @@
 function check_for_new_dicom(subject,which_run)
-
+    % add these to local hook and say "get pref" instead
     fsl_path = '/usr/local/fsl/';
     setenv('FSLDIR',fsl_path);
     setenv('FSLOUTPUTTYPE','NIFTI_GZ');
@@ -7,12 +7,14 @@ function check_for_new_dicom(subject,which_run)
     setenv('PATH',sprintf('%s:%s',fullfile(fsl_path,'bin'),curpath));
 
     %% Fill in Scanner Path
-
+    
     %scanner_path = '/Volumes/rtexport/RTexport_Current/20181020.817774_KAS25_300034.18.10.20_13_29_14_DST_1.3.12.2.1107.5.2.43.66044/'; % FILL IN SCANNER PATH HERE
     
-    scanner_path = '/Users/iron/Documents/neurofeedback/fake_dicoms/copy_into/';
+    scanner_path = '/Users/iron/Documents/MATLAB/projects/neurofeedback/test_data/fake_dicoms/copy_into/';
 
-    global subjectPath
+    subjectPath = getpref('neurofeedback', 'currentSubjectBasePath');
+    subjectPath = [subjectPath filesep subject];
+    
     global first_trigger_time
     
     %% Check for trigger
@@ -75,7 +77,7 @@ function check_for_new_dicom(subject,which_run)
     %% Main Neurofeedback Loop
     
     %%% Load the ROI HERE! 
-    v1Index = load_roi(ap_or_pa);
+    roiIndex = load_roi(subject,ap_or_pa);
     %%% Load the ROI ABOVE!
     
     
@@ -118,7 +120,7 @@ function check_for_new_dicom(subject,which_run)
             % this is where the QUESTPLUS function should go!
 
             % run plot
-            [acqTime(iteration),dicomAcqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(reg_image_dir,new_dicom_path,v1Index);
+            [acqTime(iteration),dicomAcqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(reg_image_dir,new_dicom_path,roiIndex);
 
             plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);
             hold on;

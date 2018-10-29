@@ -1,7 +1,7 @@
 # This script will take MPRAGE and a run of functional data from a subject, and register a parcel to the first image. 
 
 # to run this from command line: 
-# bash register_v1_to_APandPA.sh TOME_3040
+# bash register_ROI_to_APandPA.sh TOME_3040
 
 
 rawdir=/data/jux/sweisberg/neurofeedback/subjects/$1/raw;
@@ -33,11 +33,11 @@ convert_xfm -omat standard2coreg"$i".mat -inverse coreg2standard"$i".mat
 
 
 # apply registration to kastner parcel(s)
-flirt -in $templatedir/kastner_v1lh_10.nii -ref "$i"_first_volume.nii -out V1_TO_"$i".nii -applyxfm -init standard2coreg"$i".mat -interp trilinear 
+flirt -in $templatedir/kastner_v1lh_10.nii -ref "$i"_first_volume.nii -out ROI_to_"$i".nii -applyxfm -init standard2coreg"$i".mat -interp trilinear 
 
 
 #binarize mask
-fslmaths V1_TO_"$i".nii -bin V1_TO_"$i"_bin.nii
+fslmaths ROI_to_"$i".nii -bin ROI_to_"$i"_bin.nii
 
 done
 
