@@ -1,19 +1,8 @@
-function check_for_new_dicom(subject,which_run)
-    % add these to local hook and say "get pref" instead
-    fsl_path = '/usr/local/fsl/';
-    setenv('FSLDIR',fsl_path);
-    setenv('FSLOUTPUTTYPE','NIFTI_GZ');
-    curpath = getenv('PATH');
-    setenv('PATH',sprintf('%s:%s',fullfile(fsl_path,'bin'),curpath));
-
-    %% Fill in Scanner Path
+function check_for_new_dicom(subject,which_run)    
+    %% Get Scanner and Subject Paths
     
-    %scanner_path = '/Volumes/rtexport/RTexport_Current/20181020.817774_KAS25_300034.18.10.20_13_29_14_DST_1.3.12.2.1107.5.2.43.66044/'; % FILL IN SCANNER PATH HERE
+    [subjectPath, scannerPath, codePath] = getPaths(subject);
     
-    scanner_path = '/Users/iron/Documents/MATLAB/projects/neurofeedback/test_data/fake_dicoms/copy_into/';
-
-    subjectPath = getpref('neurofeedback', 'currentSubjectBasePath');
-    subjectPath = [subjectPath filesep subject];
     
     global first_trigger_time
     
@@ -22,12 +11,12 @@ function check_for_new_dicom(subject,which_run)
     
     %% Check for first DICOM Loop
 
-    initial_dir = dir([scanner_path '*00001.dcm']); % count all the FIRST DICOMS in the directory
-        
+    initial_dir = dir([scannerPath filesep '*00001.dcm']); % count all the FIRST DICOMS in the directory
+    
     i=0;
     while i<10000000000
         i = i+1;
-        new_dir = dir([scanner_path '*00001.dcm']); % check files in scanner_path
+        new_dir = dir([scannerPath filesep '*00001.dcm']); % check files in scanner_path
         if length(new_dir) > length(initial_dir) % if there's a new FIRST DICOM
             
             reg_dicom_name = new_dir(end).name;
@@ -57,10 +46,10 @@ function check_for_new_dicom(subject,which_run)
     end
 
     
-    copyfile(fullfile(old_dicom_folder,old_dicom_name),strcat(reg_image_dir,'/new',ap_or_pa,'.nii.gz'));
+    copyfile(fullfile(old_dicom_folder,old_dicom_name),strcat(subjectPath,'/new',ap_or_pa,'.nii.gz'));
     
     % grab path to the bash script for registering to the new DICOM
-    pathToRegistrationScript = fullfile(pwd,'register_EPI_to_EPI.sh');
+    pathToRegistrationScript = fullfile(codePath,'register_EPI_to_EPI.sh');
     
     % run registration script name as: register_EPI_to_EPI.sh AP TOME_3040
     cmdStr = [pathToRegistrationScript ' ' ap_or_pa ' ' subject];
@@ -90,7 +79,7 @@ function check_for_new_dicom(subject,which_run)
 
 
     %initialize to # of files in scanner_path
-    initial_dir = dir(scanner_path);
+    initial_dir = dir(scannerPath);
 
 
     
@@ -105,7 +94,7 @@ function check_for_new_dicom(subject,which_run)
     i=0;
     while i<10000000000
         i = i+1;
-        new_dir = dir(scanner_path); % check files in scanner_path
+        new_dir = dir(scannerPath); % check files in scanner_path
         if length(new_dir) > length(initial_dir) % if there's a new file
             tic % start timer
 
@@ -120,7 +109,7 @@ function check_for_new_dicom(subject,which_run)
             % this is where the QUESTPLUS function should go!
 
             % run plot
-            [acqTime(iteration),dicomAcqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(reg_image_dir,new_dicom_path,roiIndex);
+            [acqTime(iteration),dicomAcqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(reg_image_dir,new_dicom_path,roiIndex,subjectPath);
 
             plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);
             hold on;

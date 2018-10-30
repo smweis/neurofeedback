@@ -1,10 +1,8 @@
 % Change path to where NIFTIs will be stored on Macbook
-global subjectPath
 
 subject = input('Subject number?','s');
 run = input('Which run?','s');
 
-subjectPath = strcat('/Users/iron/Documents/neurofeedback/Current_Subject/',subject);
 
 
 

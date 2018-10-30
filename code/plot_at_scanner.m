@@ -1,7 +1,6 @@
-function [acqTime, dicomAcqTime, v1Signal, dataTimepoint] = plot_at_scanner(niftiName,dicomPath,v1Index)
+function [acqTime, dicomAcqTime, v1Signal, dataTimepoint] = plot_at_scanner(niftiName,dicomPath,v1Index,subjectPath)
 
 
-global subjectPath
 
 acqTime = datetime; %save timepoint  
 
