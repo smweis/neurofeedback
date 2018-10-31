@@ -1,124 +1,45 @@
-function check_for_new_dicom(subject,which_run)    
-    %% Get Scanner and Subject Paths
-    
-    [subjectPath, scannerPath, codePath] = getPaths(subject);
-    
-    
-    global first_trigger_time
-    
-    %% Check for trigger
-    first_trigger_time = wait_for_trigger;
-    
-    %% Check for first DICOM Loop
-
-    initial_dir = dir([scannerPath filesep '*00001.dcm']); % count all the FIRST DICOMS in the directory
-    
-    i=0;
-    while i<10000000000
-        i = i+1;
-        new_dir = dir([scannerPath filesep '*00001.dcm']); % check files in scanner_path
-        if length(new_dir) > length(initial_dir) % if there's a new FIRST DICOM
-            
-            reg_dicom_name = new_dir(end).name;
-            reg_dicom_path = new_dir(end).folder;
-            break
-        else
-            pause(0.01);
-        end
-    end
-
-    %% Complete Registration to First DICOM
-
-    reg_image_dir = strcat(subjectPath,'/run', which_run);
-
-    % convert the first DICOM to a NIFTI
-    dicm2nii(fullfile(reg_dicom_path,reg_dicom_name),reg_image_dir);
-    old_dicom_dir = dir(strcat(reg_image_dir,'/*.nii.gz'));
-    old_dicom_name = old_dicom_dir.name;
-    old_dicom_folder = old_dicom_dir.folder;
-    
-        
-    ap_check = strfind(old_dicom_name,'AP');
-    if ap_check
-        ap_or_pa = 'AP';
-    else
-        ap_or_pa = 'PA';
-    end
-
-    
-    copyfile(fullfile(old_dicom_folder,old_dicom_name),strcat(subjectPath,'/new',ap_or_pa,'.nii.gz'));
-    
-    % grab path to the bash script for registering to the new DICOM
-    pathToRegistrationScript = fullfile(codePath,'register_EPI_to_EPI.sh');
-    
-    % run registration script name as: register_EPI_to_EPI.sh AP TOME_3040
-    cmdStr = [pathToRegistrationScript ' ' ap_or_pa ' ' subject];
-    system(cmdStr);
-
-
-    load(fullfile(reg_image_dir,'dcmHeaders.mat'),'h');
-    subHName = fieldnames(h);
-    
-    global initialDicomAcqTime
-    
-    initialDicomAcqTime = str2double(h.(subHName{1}).AcquisitionTime);
-
+function [acqTime,dataTimepoint,v1Signal,dicomAcqTime] = check_for_new_dicom(subjectPath,scannerPath,roiIndex,initialDirSize)    
     %% Main Neurofeedback Loop
-    
-    %%% Load the ROI HERE! 
-    roiIndex = load_roi(subject,ap_or_pa);
-    %%% Load the ROI ABOVE!
-    
-    
 
-    global iteration
-    global acqTime
-    global v1Signal
-    global dataTimepoint
-    global dicomAcqTime
+    iteration = 1;
+    acqTime = repmat(datetime,10000,1);
+    dataTimepoint = repmat(datetime,10000,1);
+    v1Signal = repmat(10000,1);
+    dicomAcqTime = repmat(10000,1);
 
-
+    
     %initialize to # of files in scanner_path
-    initial_dir = dir(scannerPath);
-
-
-    
-    
-    % Should build in TWO settings. One setting should allow you to get the
-    % latest DICOM. The other setting should collect all DICOMs and process
-    % them as fast as you can. 
-    
-    
-
+    initialDir = dir(scannerPath);
 
     i=0;
     while i<10000000000
         i = i+1;
-        new_dir = dir(scannerPath); % check files in scanner_path
-        if length(new_dir) > length(initial_dir) % if there's a new file
-            tic % start timer
-
-            initial_dir = new_dir; % reset # of files
-
-
-            reg_image_dir = new_dir(end).name; % get new name of file
-            new_dicom_path = new_dir.folder; % get path to file
-
-
+        newDir = dir(scannerPath); % check files in scanner_path
+             
+        if length(newDir) > length(initialDir) % if there's a new file
+            missedDicomNumber = length(newDir) - length(initialDir); % how many DICOMS were missed?
+            initialDir = newDir; % reset # of files
+            newDicoms = newDir(end-missedDicomNumber:end); % get the last # of missed dicoms
+            
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+            % consider PARALLEL COMPUTING HERE. ALSO, NEED TO FIX
+            % PLOT_FOR_SCANNER TO JUST BE A GENERIC FUNCTION 
             % this is where the QUESTPLUS function should go!
+            for j = 1:length(newDicoms)
+                thisDicomName = newDicoms(j).name;
+                thisDicomPath = newDir(j).folder; % get path to file
 
-            % run plot
-            [acqTime(iteration),dicomAcqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(reg_image_dir,new_dicom_path,roiIndex,subjectPath);
 
-            plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);
-            hold on;
+                % run plot
+                
+                [acqTime(iteration),dicomAcqTime(iteration),v1Signal(iteration),dataTimepoint(iteration)] = plot_at_scanner(thisDicomName,thisDicomPath,roiIndex,subjectPath);
 
-            % WE CAN CALCULATE LAG HERE! 
-            %str2double(datestr(dataTimepoint(iteration),'HHMMSS.FFF')) - dicomAcqTime(iteration)
+                plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);
+                hold on;
 
-            toc % end timer
-
+            end
+            
             iteration = iteration + 1;
 
         end

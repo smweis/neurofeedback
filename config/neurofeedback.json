@@ -55,7 +55,7 @@
 		"flavor": "",
 		"hook": "",
 		"importance": "",
-		"localHookTemplate": "",
+		"localHookTemplate": "config/neurofeedbackLocalHookTemplate.m",
 		"name": "neurofeedback",
 		"pathPlacement": "append",
 		"subfolder": "",

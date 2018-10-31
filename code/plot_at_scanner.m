@@ -1,4 +1,4 @@
-function [acqTime, dicomAcqTime, v1Signal, dataTimepoint] = plot_at_scanner(niftiName,dicomPath,v1Index,subjectPath)
+function [acqTime, dicomAcqTime, roiSignal, dataTimepoint] = plot_at_scanner(niftiName,dicomPath,roiIndex,subjectPath)
 
 
 
@@ -20,7 +20,7 @@ targetIm = targetNifti.img;
 
 
 % Step 2. Compute mean from v1 ROI, then plot it against a timestamp
-v1Signal = mean(targetIm(v1Index));
+roiSignal = mean(targetIm(roiIndex));
 load(fullfile(newNiftiPath,'dcmHeaders.mat'),'h')
 subHNames = fieldnames(h);
 dicomAcqTime = str2double(h.(subHNames{1}).AcquisitionTime);
