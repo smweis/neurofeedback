@@ -7,7 +7,7 @@
 
 
 #FILL IN SUBJECT NUMBER AT END OF THIS PATH HERE
-subject_dir="/Users/iron/Documents/rtQuest/${2}"
+subject_dir="/Users/nfuser/Documents/rtQuest/${2}"
 
 
 newNifti=new"$1".nii

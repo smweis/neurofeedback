@@ -6,11 +6,13 @@ run = '1';
 
 
 
-% initialize some global variables
-
+% set flags
+showFig = false;
 
 % initialize figure
-figure;
+if showFig
+    figure;
+end
 
 %% Get Relevant Paths
 [subjectPath, scannerPath, codePath] = getPaths(subject);
@@ -21,6 +23,7 @@ first_trigger_time = wait_for_trigger;
 
 
 %% Register to First DICOM
+
 [ap_or_pa,initialDirSize] = register_to_first_dicom(subject,subjectPath,run,scannerPath,codePath);
 
 
@@ -31,8 +34,19 @@ roiIndex = load_roi(roiPath);
 
 
 %% Main Neurofeedback Loop
-[acqTime,dataTimepoint,v1Signal,dicomAcqTime] = check_for_new_dicom(subjectPath,scannerPath,roiIndex,initialDirSize);
+iteration = 1;
+acqTime = repmat(datetime,10000,1);
+dataTimepoint = repmat(datetime,10000,1);
+v1Signal = repmat(10000,1);
 
+    
+i = 0;
+while i < 10000000000
+    i = i + 1;
+    [acqTime(iteration),dataTimepoint(iteration),v1Signal(iteration),initialDirSize] = check_for_new_dicom(subjectPath,scannerPath,roiIndex,initialDirSize);
+    iteration = iteration + 1;
+    pause(0.01);
+end
 
 
 
