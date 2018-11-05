@@ -34,17 +34,26 @@ roiIndex = load_roi(roiPath);
 
 
 %% Main Neurofeedback Loop
-iteration = 1;
-acqTime = repmat(datetime,10000,1);
-dataTimepoint = repmat(datetime,10000,1);
-v1Signal = repmat(10000,1);
 
-    
+mainData = struct;
+
+mainData.acqTime = {};
+mainData.dataTimepoint = {};
+% figure how to save v1 signal in a way that allows you to do calculations
+% on it. 
+mainData.v1Signal = {};
+
+
+
+% need to figure out how to do stuff outside this while loop? 
+% maybe can do things inside it still. Not sure
 i = 0;
 while i < 10000000000
     i = i + 1;
-    [acqTime(iteration),dataTimepoint(iteration),v1Signal(iteration),initialDirSize] = check_for_new_dicom(subjectPath,scannerPath,roiIndex,initialDirSize);
-    iteration = iteration + 1;
+    [newAcqTimes,newDataTimepoints,newV1Signals,initialDirSize] = check_for_new_dicom(subjectPath,scannerPath,roiIndex,initialDirSize);
+    mainData.acqTime = [mainData.acqTime newAcqTimes];
+    mainData.dataTimepoint = [mainData.dataTimepoint newDataTimepoints];
+    mainData.v1Signal = [mainData.v1Signal; newV1Signals];
     pause(0.01);
 end
 

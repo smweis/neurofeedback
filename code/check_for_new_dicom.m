@@ -1,4 +1,4 @@
-function [acqTime,dataTimepoint,v1Signal,dicomAcqTime,initialDirSize] = check_for_new_dicom(subjectPath,scannerPath,roiIndex,initialDirSize)    
+function [acqTime,dataTimepoint,v1Signal,initialDirSize] = check_for_new_dicom(subjectPath,scannerPath,roiIndex,initialDirSize)    
 %% Main Neurofeedback Loop
 
 acqTime = datetime;
@@ -8,26 +8,31 @@ acqTime = datetime;
 
 newDir = dir(scannerPath); % check files in scanner_path
 
-if length(newDir) > initialDirSize % if there's a new file
+% if no new files, call the function again
+if length(newDir) == initialDirSize
+    pause(0.01);
+    [acqTime,dataTimepoint,v1Signal,initialDirSize] = check_for_new_dicom(subjectPath,scannerPath,roiIndex,initialDirSize);
+
+% else if there are new files
+elseif length(newDir) > initialDirSize
     missedDicomNumber = length(newDir) - initialDirSize; % how many DICOMS were missed?
-    initialDirSize = newDir; % reset # of files
+    initialDirSize = length(newDir); % reset # of files
     newDicoms = newDir(end + 1 - missedDicomNumber:end); % get the last # of missed dicoms
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
     % consider PARALLEL COMPUTING HERE.
     % this is where the QUESTPLUS function should go!
-    for j = 1:length(newDicoms)
+    parfor j = 1:length(newDicoms)
         thisDicomName = newDicoms(j).name;
         thisDicomPath = newDir(j).folder; % get path to file
-        
+        tic
         targetIm = extract_signal(thisDicomName,thisDicomPath,subjectPath);
         
         
         % run plot
         
-        [v1Signal,dataTimepoint] = scanner_function(targetIm,roiIndex);
-        
+        [v1Signal(j),dataTimepoint(j)] = scanner_function(targetIm,roiIndex);
+        toc
         %plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);
         %hold on;
         
