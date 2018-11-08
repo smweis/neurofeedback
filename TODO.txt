@@ -1,8 +1,17 @@
 
 
-## Scripting
+## At scanner issues! 
 Fix to read-only account??
 
-Set so that we can do function over however many DICOMs we missed.
+Check that log in credentials work at the scanner. 
 
-Factorize the code so that registering dicoms and acquiring new dicoms are both functions. 
+## Scripting
+
+Possibly figure out how to make the while loop a little better. Also might need to 
+save things out as we go in order to read them back in. 
+
+Learn and integrate QuestPLUS. 
+
+Maybe - toolbox toolbox with parallel computing toolbox?
+Definitely - launch parallel computing toolbox before (or during) registration. 
+

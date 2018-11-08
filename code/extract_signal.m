@@ -1,6 +1,7 @@
 function [targetIm] = extract_signal(niftiName,dicomPath,subjectPath)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+%Function will take in a the name for NIFTI folder (from the file name of the DICOM) 
+%a path to where the DICOM is, and a subject's path
+%and output the target image in the form of a 3d matrix.
 
 
 
@@ -9,7 +10,7 @@ function [targetIm] = extract_signal(niftiName,dicomPath,subjectPath)
 
 newNiftiPath = fullfile(subjectPath,'niftis',niftiName);
 
-% Step 1. Convert DICOM to NIFTI (.nii) and load NIFTI into Matlab
+% Convert DICOM to NIFTI (.nii) and load NIFTI into Matlab
 dicm2nii(fullfile(dicomPath,niftiName),newNiftiPath,0);
 newNiftiName = dir(strcat(newNiftiPath,'/*.nii'));
 newNiftiName = fullfile(newNiftiPath,newNiftiName.name);

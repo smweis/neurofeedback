@@ -20,24 +20,27 @@ elseif length(newDir) > initialDirSize
     newDicoms = newDir(end + 1 - missedDicomNumber:end); % get the last # of missed dicoms
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % consider PARALLEL COMPUTING HERE.
-    % this is where the QUESTPLUS function should go!
+
+    
+    
+    %tic
     parfor j = 1:length(newDicoms)
         thisDicomName = newDicoms(j).name;
         thisDicomPath = newDir(j).folder; % get path to file
-        tic
+
         targetIm = extract_signal(thisDicomName,thisDicomPath,subjectPath);
         
         
-        % run plot
+        %this is where the QUESTPLUS function should go!
+
         
         [v1Signal(j),dataTimepoint(j)] = scanner_function(targetIm,roiIndex);
-        toc
+
         %plot(dataTimepoint(iteration),v1Signal(iteration),'r.','MarkerSize',20);
         %hold on;
         
     end
-    
+    %toc
     
 end
 

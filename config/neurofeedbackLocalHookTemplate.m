@@ -36,6 +36,7 @@ switch userID
         projectBasePath = [filesep 'Users' filesep userID filesep 'Documents' filesep 'MATLAB' filesep 'projects' filesep projectName];
     otherwise
         currentSubjectBasePath = [filesep 'Users' filesep, userID filesep 'Documents' filesep 'rtQuest'];
+        projectBasePath = [filesep 'Users' filesep userID filesep 'Documents' filesep 'MATLAB' filesep 'projects' filesep projectName];
 end
 
 cd(projectBasePath);
