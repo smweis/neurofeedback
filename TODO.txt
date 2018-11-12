@@ -10,6 +10,8 @@ Check that log in credentials work at the scanner.
 Possibly figure out how to make the while loop a little better. Also might need to 
 save things out as we go in order to read them back in. 
 
+Remove tmp/neurofeedback files afterward. This might require fixing the while loop. 
+
 Learn and integrate QuestPLUS. 
 
 Maybe - toolbox toolbox with parallel computing toolbox?

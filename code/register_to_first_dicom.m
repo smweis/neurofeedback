@@ -4,11 +4,10 @@ function [ap_or_pa,dir_length_after_registration] = register_to_first_dicom(subj
 
     initial_dir = dir([scannerPath filesep '*00001.dcm']); % count all the FIRST DICOMS in the directory
     
-    i=0;
+
     fprintf('Waiting for first DICOM...\n');
-    while i<10000000000
+    while(1)
         
-        i = i+1;
         new_dir = dir([scannerPath filesep '*00001.dcm']); % check files in scanner_path
         if length(new_dir) > length(initial_dir) % if there's a new FIRST DICOM
             reg_dicom_name = new_dir(end).name;

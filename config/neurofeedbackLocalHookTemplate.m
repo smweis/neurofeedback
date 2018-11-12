@@ -60,7 +60,9 @@ else
     scannerBasePath = [projectBasePath filesep 'test_data' filesep 'fake_dicoms' filesep 'copy_into' filesep];
 end
 
-
+%% Start parallel computing toolbox paralllel pool
+% With 8 workers
+parpool(8)
 %% Specify where output goes
 
 if ismac
