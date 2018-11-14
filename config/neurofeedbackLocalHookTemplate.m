@@ -37,16 +37,22 @@ switch userID
     otherwise
         currentSubjectBasePath = [filesep 'Users' filesep, userID filesep 'Documents' filesep 'rtQuest'];
         projectBasePath = [filesep 'Users' filesep userID filesep 'Documents' filesep 'MATLAB' filesep 'projects' filesep projectName];
+
 end
 
-cd(projectBasePath);
 addpath(genpath(projectBasePath));
+
+%% Generate a parallel pool of workers, based on the number of logical cores on your system
+% To find out how many you have look at logical cores: 
+% feature('numCores'); 
+
+parpool(8);
 
 %% Try to log into the scanner computer at SC3T
 
-username = 'dummy';
-password = 'dummy';
-serverIP = 'dummy';
+username = 'mars2';
+password = 'PASSword$$$$1111';
+serverIP = '10.140.146.254';
 
 command = ['mount_smbfs //' username ':' password '@' serverIP filesep 'mnt' filesep 'rtexport'];
 
@@ -60,9 +66,7 @@ else
     scannerBasePath = [projectBasePath filesep 'test_data' filesep 'fake_dicoms' filesep 'copy_into' filesep];
 end
 
-%% Start parallel computing toolbox paralllel pool
-% With 8 workers
-parpool(8)
+
 %% Specify where output goes
 
 if ismac
