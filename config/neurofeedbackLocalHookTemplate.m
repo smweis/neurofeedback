@@ -40,7 +40,6 @@ switch userID
 
 end
 
-addpath(genpath(projectBasePath));
 
 %% Generate a parallel pool of workers, based on the number of logical cores on your system
 % To find out how many you have look at logical cores: 
