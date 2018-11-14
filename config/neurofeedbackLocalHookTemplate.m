@@ -3,7 +3,7 @@ function neurofeedbackLocalHook
 %
 % Configure things for working on the  neurofeedback project.
 %
-% For use with the ToolboxTo
+% For use with the ToolboxToolbox
 %
 % As part of the setup process, ToolboxToolbox will copy this file to your
 % ToolboxToolbox localToolboxHooks directory (minus the "Template" suffix).
@@ -61,7 +61,6 @@ command = ['mount_smbfs //' username ':' password '@' serverIP filesep 'mnt' fil
 
 status = system(command);
 if status == 0
-    fprintf('success');
     scannerBasePath = [filesep 'Volumes' filesep 'rtexport' filesep 'RTexport_Current' filesep];
   
 else
@@ -94,7 +93,7 @@ elseif isunix
     
 elseif ispc
     % Code to run on Windows platform
-    warning('No supported for PC')
+    warning('No support for PC')
 else
     disp('What are you using?')
 end
