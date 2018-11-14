@@ -59,7 +59,7 @@
 		"name": "neurofeedback",
 		"pathPlacement": "append",
 		"subfolder": "",
-		"toolboxRoot": "",
+		"toolboxRoot": "#",
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/www.github.com\/smweis\/neurofeedback"
