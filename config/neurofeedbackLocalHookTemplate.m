@@ -46,7 +46,11 @@ addpath(genpath(projectBasePath));
 % To find out how many you have look at logical cores: 
 % feature('numCores'); 
 
-parpool(8);
+% first check if one is running, then create one if not
+nfPool = gcp('nocreate');
+if size(nfPool) == 0
+    nfPool = parpool(8);
+end
 
 %% Try to log into the scanner computer at SC3T
 
