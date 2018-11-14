@@ -69,6 +69,12 @@ while i < 10000000000
     
     j = j + 1;
     
+    % Otherwise, we can do stuff in here, rather than in
+    % check_for_new_dicom
+    
+    % if we want to write out each iteration...
+    %save(fullfile(subjectPath,'mainData'),'mainData');
+    
     pause(0.01);
 end
 

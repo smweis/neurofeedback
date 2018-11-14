@@ -1,6 +1,8 @@
 # neurofeedback
 A pipeline for neurofeedback
 
-To use, git clone.
+To use, git clone into '/Documents/MATLAB/projects/.
 
-If using with Toolbox Toolbox, then copy and edit the LocalHook.
+If using with Toolbox Toolbox, then tbUseProject('neurofeedback')
+
+

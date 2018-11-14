@@ -63,5 +63,18 @@
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/www.github.com\/smweis\/neurofeedback"
+	},
+{
+		"flavor": "",
+		"hook": "",
+		"importance": "optional",
+		"localHookTemplate": "",
+		"name": "distcomp",
+		"pathPlacement": "append",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "installed",
+		"update": "",
+		"url": ""
 	}
 ]
