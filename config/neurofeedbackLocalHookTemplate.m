@@ -47,7 +47,6 @@ addpath(genpath(projectBasePath));
 % feature('numCores'); 
 
 % first check if one is running, then create one if not
-%TEST??
 nfPool = gcp('nocreate');
 if size(nfPool) == 0
     nfPool = parpool(8);
@@ -55,9 +54,9 @@ end
 
 %% Try to log into the scanner computer at SC3T
 
-username = 'mars2';
-password = 'PASSword$$$$1111';
-serverIP = '10.140.146.254';
+username = 'dummy';
+password = 'dummy';
+serverIP = 'dummy';
 
 command = ['mount_smbfs //' username ':' password '@' serverIP filesep 'mnt' filesep 'rtexport'];
 
