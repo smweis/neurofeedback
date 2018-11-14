@@ -47,6 +47,7 @@ addpath(genpath(projectBasePath));
 % feature('numCores'); 
 
 % first check if one is running, then create one if not
+%TEST??
 nfPool = gcp('nocreate');
 if size(nfPool) == 0
     nfPool = parpool(8);
