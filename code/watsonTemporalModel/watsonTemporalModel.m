@@ -34,19 +34,38 @@ function y = watsonTemporalModel(frequenciesHz, params)
 %   empirically. Center and surround orders of "9" and "10" are presented
 %   in (e.g.) Figure 6.5 of Watson (1986).
 %
+%   The model returns a vector of complex values that contain the real and
+%   imaginary compoents that define the Fourier transform of the system
+%   output. To model just the amplitude component of a temporal transfer
+%   function, the absolute value of the model output should be taken.
+%
 % Inputs:
-%   frequenciesHz         - as
-%   params                - foo
+%   frequenciesHz         - 1xn vector that provides the stimulus
+%                           frequencies for which the model will be
+%                           evaluated
+%   params                - 1x4 vector of model parameters:
+%                             tau - time constant of the center filter (in
+%                                   seconds)
+%                           kappa - multiplier of the time-constant for the
+%                                   surround
+%                 centerAmplitude - amplitude of the center filter
+%                            zeta - multiplier that scales the amplitude of
+%                                   the surround filter                                
 %
 % Outputs:
-%   y                     - bar
+%   y                     - 1xn vector of complex values.
 %
 % Examples:
 %{
-    frequenciesHz = [2,4,8,16,32,64];
-    params = [0.0037, 2, 5, .5];
-    y = watsonTemporalModel(frequenciesHz, params)
-    semilogx(frequenciesHz, y, '-.r');
+    stimulusFreqHz = [2,4,8,16,32,64];
+    pctBOLDresponse = [0.4, 0.75, 0.80, 0.37, 0.1, 0.0];
+    myObj = @(p) sqrt(sum((data-abs(watsonTemporalModel(stimulusFreqHz,p))).^2));
+    x0 = [0.004 2 1 1];
+    params = fmincon(myObj,x0,[],[]);
+    stimulusFreqHzFine = stimulusFreqHz(1):0.1:stimulusFreqHz(end);
+    semilogx(stimulusFreqHzFine,abs(watsonTemporalModel(stimulusFreqHzFine,params)),'-k');
+    hold on
+    semilogx(frequenciesHz, data, '*r');
 %}
 
 % Fixed parameters (taken from Figure 6.4 and 6.5 of Watson 1986)
@@ -54,26 +73,21 @@ centerFilterOrder = 9; % Order of the center (usually fast) filter
 surroundFilterOrder = 10; % Order of the surround (usually slow) filter
 
 % Un-pack the passed parameters
-params_tau = params(1);             % time constant of the center filter (in seconds)
-params_kappa = params(2);           % multiplier of the time-constant for the surround
-params_centerAmplitude = params(3); % amplitude of the center filter
-params_zeta = params(4);            % multiplier that scales the amplitude of the surround filter
+params_tau = params(1);
+params_kappa = params(2);
+params_centerAmplitude = params(3);
+params_zeta = params(4);
 
-% Generate the model. We return H.
+% Generate the model. We return y.
 H1 = nStageLowPassFilter(params_tau,frequenciesHz,centerFilterOrder);
 H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz,surroundFilterOrder);
 y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
 end
 
 
-
 function Hsub = nStageLowPassFilter(tau,frequenciesHz,filterOrder)
 % This function implements the system response of the linear filter
-% for temporal sensitivity of neural systems in Eq 42 of:
-%
-%   Watson, A.B. (1986). Temporal sensitivity. In Handbook of Perception
-%   and Human Performance, Volume 1, K. Boff, L. Kaufman and
-%   J. Thomas, eds. (New York: Wiley), pp. 6-1-6-43..
+% for temporal sensitivity of neural systems in Eq 42 of Watson (1986).
 %
 % The implemented function is the "system respone" (Fourier transform) of
 % the impulse response of an nth-order filter which is of the form:
