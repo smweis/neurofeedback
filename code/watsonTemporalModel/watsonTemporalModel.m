@@ -16,7 +16,8 @@ function y = watsonTemporalModel(frequenciesHz, params)
 %       and Human Performance, Volume 1, K. Boff, L. Kaufman and
 %       J. Thomas, eds. (New York: Wiley), pp. 6-1-6-43.
 %
-%   Note that there is a typo in original manuscript. Equation 45 should be:
+%   Note that there is a typo in original manuscript. Equation 45 should
+%   be:
 %
 %       H(frequenciesHz) = a[H1(frequenciesHz) - bH2(frequenciesHz)]
 %
@@ -34,10 +35,11 @@ function y = watsonTemporalModel(frequenciesHz, params)
 %   empirically. Center and surround orders of "9" and "10" are presented
 %   in (e.g.) Figure 6.5 of Watson (1986).
 %
-%   The model returns a vector of complex values that contain the real and
-%   imaginary compoents that define the Fourier transform of the system
-%   output. To model just the amplitude component of a temporal transfer
-%   function, the absolute value of the model output should be taken.
+%   Note that the model can only return positive amplitudes of response,
+%   although some empirical data may have a negative amplitude (e.g., BOLD
+%   fMRI data of a low temporal frequency stimulus as compared to a blank
+%   screen). To handle this circumstance, it is recommended that data be
+%   offset so that the minimum amplitude value is zero prior to fitting.
 %
 % Inputs:
 %   frequenciesHz         - 1xn vector that provides the stimulus
@@ -53,17 +55,17 @@ function y = watsonTemporalModel(frequenciesHz, params)
 %                                   the surround filter                                
 %
 % Outputs:
-%   y                     - 1xn vector of complex values.
+%   y                     - 1xn vector of modeled amplitude values.
 %
 % Examples:
 %{
     stimulusFreqHz = [2,4,8,16,32,64];
     pctBOLDresponse = [0.4, 0.75, 0.80, 0.37, 0.1, 0.0];
-    myObj = @(p) sqrt(sum((data-abs(watsonTemporalModel(stimulusFreqHz,p))).^2));
+    myObj = @(p) sqrt(sum((data-watsonTemporalModel(stimulusFreqHz,p)).^2));
     x0 = [0.004 2 1 1];
     params = fmincon(myObj,x0,[],[]);
     stimulusFreqHzFine = stimulusFreqHz(1):0.1:stimulusFreqHz(end);
-    semilogx(stimulusFreqHzFine,abs(watsonTemporalModel(stimulusFreqHzFine,params)),'-k');
+    semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,params),'-k');
     hold on
     semilogx(frequenciesHz, data, '*r');
 %}
@@ -82,6 +84,13 @@ params_zeta = params(4);
 H1 = nStageLowPassFilter(params_tau,frequenciesHz,centerFilterOrder);
 H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz,surroundFilterOrder);
 y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
+
+% The model calculates a vector of complex values that define the Fourier
+% transform of the system output. As we are implementing a model of just
+% the amplitude component of a temporal transfer function, the absolute
+% value of the model output is returned.
+y = abs(y);
+
 end
 
 
