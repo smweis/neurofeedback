@@ -52,7 +52,7 @@ function y = watsonTemporalModel(frequenciesHz, params)
 %                                   surround
 %                 centerAmplitude - amplitude of the center filter
 %                            zeta - multiplier that scales the amplitude of
-%                                   the surround filter                                
+%                                   the surround filter
 %
 % Outputs:
 %   y                     - 1xn vector of modeled amplitude values.

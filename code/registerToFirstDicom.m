@@ -1,13 +1,13 @@
-function [ap_or_pa,dir_length_after_registration] = register_to_first_dicom(subject,subjectPath,which_run,scannerPath,codePath)
-%register_to_first_dicom, return whether this scan is AP or PA direction
-%based on whether PA or AP is present in the NIFTI file name. 
+function [ap_or_pa,dir_length_after_registration] = registerToFirstDicom(subject,subjectPath,which_run,scannerPath,codePath)
+% registerToFirstDicom, return whether this scan is AP or PA direction
+% based on whether PA or AP is present in the NIFTI file name.
 
     initial_dir = dir([scannerPath filesep '*00001.dcm']); % count all the FIRST DICOMS in the directory
-    
+
 
     fprintf('Waiting for first DICOM...\n');
     while(1)
-        
+
         new_dir = dir([scannerPath filesep '*00001.dcm']); % check files in scanner_path
         if length(new_dir) > length(initial_dir) % if there's a new FIRST DICOM
             reg_dicom_name = new_dir(end).name;
@@ -18,9 +18,9 @@ function [ap_or_pa,dir_length_after_registration] = register_to_first_dicom(subj
             pause(0.01);
         end
     end
-    
+
     fprintf('Performing registration on first DICOM\n');
-    
+
     %% Complete Registration to First DICOM
 
     reg_image_dir = strcat(subjectPath,'/run', which_run);
@@ -30,8 +30,8 @@ function [ap_or_pa,dir_length_after_registration] = register_to_first_dicom(subj
     old_dicom_dir = dir(strcat(reg_image_dir,'/*.nii.gz'));
     old_dicom_name = old_dicom_dir.name;
     old_dicom_folder = old_dicom_dir.folder;
-    
-        
+
+
     ap_check = strfind(old_dicom_name,'AP');
     if ap_check
         ap_or_pa = 'AP';
@@ -39,12 +39,12 @@ function [ap_or_pa,dir_length_after_registration] = register_to_first_dicom(subj
         ap_or_pa = 'PA';
     end
 
-    
+
     copyfile(fullfile(old_dicom_folder,old_dicom_name),strcat(subjectPath,'/new',ap_or_pa,'.nii.gz'));
-    
+
     % grab path to the bash script for registering to the new DICOM
-    pathToRegistrationScript = fullfile(codePath,'register_EPI_to_EPI.sh');
-    
+    pathToRegistrationScript = fullfile(codePath,'registerEpiToEpi.sh');
+
     % run registration script name as: register_EPI_to_EPI.sh AP TOME_3040
     cmdStr = [pathToRegistrationScript ' ' ap_or_pa ' ' subject];
     system(cmdStr);
@@ -52,4 +52,3 @@ function [ap_or_pa,dir_length_after_registration] = register_to_first_dicom(subj
     fprintf('Registration Complete. \n');
 
 end
-
