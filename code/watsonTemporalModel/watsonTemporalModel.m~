@@ -75,18 +75,18 @@ centerFilterOrder = 9; % Order of the center (usually fast) filter
 surroundFilterOrder = 10; % Order of the surround (usually slow) filter
 
 % Un-pack the passed parameters
-params_tau = params(1);
-params_kappa = params(2);
-params_centerAmplitude = params(3);
-params_zeta = params(4);
+params_tau = params(:,1);
+params_kappa = params(:,2);
+params_centerAmplitude = params(:,3);
+params_zeta = params(:,4);
 
-% Generate the model. We return y for each stimulus.
+% Generate the model. We return y.
 
 for i = 1:length(frequenciesHz)
 
-    H1 = nStageLowPassFilter(params_tau,frequenciesHz(i),centerFilterOrder);
-    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz(i),surroundFilterOrder);
-    rawY = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
+    H1 = nStageLowPassFilter(params_tau(i),frequenciesHz(i),centerFilterOrder);
+    H2 = nStageLowPassFilter(params_kappa(i)*params_tau(i),frequenciesHz(i),surroundFilterOrder);
+    rawY = (params_centerAmplitude(i) * H1) - (params_zeta(i)*params_centerAmplitude(i)*H2(i));
 
 % The model calculates a vector of complex values that define the Fourier
 % transform of the system output. As we are implementing a model of just

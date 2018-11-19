@@ -1,0 +1,50 @@
+% initialize a questData struct
+% stimParamsDomainList - the possible frequencies to sample
+% psiParamsDomainList - right now just letting the first two vary. Letting
+%                       the others vary takes a while. But just to
+%                       initialize.
+% qpPf - our psychometric function
+% qpOutcomeF - this needs to be specified or it defaults
+% nOutcomes - our possible number of outcomes (based on
+%             watsonTemporalModel) where we discretize the output to be 
+%             .5% - 1.5% incremented by .1%
+
+questData = qpInitialize('stimParamsDomainList',{[0:1:64]}, ...
+    'psiParamsDomainList',{0:.0004:.008,-10:2:10,1,1},...
+    'qpPF',@watsonTemporalModel,...
+    'qpOutcomeF',@(x) qpSimulatedObserver(x,@watsonTemporalModel,[.003,2,2,1]),...
+    'nOutcomes',21);
+
+% these are our simulated psychometric parameters
+simulatedPsiParams = [.004,2,1,1];
+
+
+% let's simulate a random observer for 10 trials. 
+% output needs to match watsonTemporal Model - 
+simulatedObserverRand = randi(21,10,1);
+
+
+
+
+
+
+simulatedObserverFun = @(x) qpSimulatedObserver(x,@watsonTemporalModel,simulatedPsiParams);
+
+for i = 1:10
+    stim = qpQuery(questData);
+    outcome = simulatedObserverRand(i);
+    questData = qpUpdate(questData,stim,outcome);
+end
+
+psiParamsIndex = qpListMaxArg(questData.posterior);
+psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
+fprintf('Simulated parameters: %f, %f, %f, %f\n', ...
+    simulatedPsiParams(1),simulatedPsiParams(2),simulatedPsiParams(3),simulatedPsiParams(4));
+fprintf('Max posterior QUEST+ parameters: %f, %f, %f, %f\n', ...
+    psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4));
+
+
+psiParamsFit = qpFit(questData.trialData,questData.qpPF,psiParamsQuest,questData.nOutcomes,...
+    'lowerBounds', [0 -10 -1 -1],'upperBounds',[.008 10 1 1]);
+fprintf('Maximum likelihood fit parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+    psiParamsFit(1),psiParamsFit(2),psiParamsFit(3),psiParamsFit(4));
