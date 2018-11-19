@@ -61,13 +61,13 @@ function y = watsonTemporalModel(frequenciesHz, params)
 %{
     stimulusFreqHz = [2,4,8,16,32,64];
     pctBOLDresponse = [0.4, 0.75, 0.80, 0.37, 0.1, 0.0];
-    myObj = @(p) sqrt(sum((data-watsonTemporalModel(stimulusFreqHz,p)).^2));
+    myObj = @(p) sqrt(sum((pctBOLDresponse-watsonTemporalModel(stimulusFreqHz,p)).^2));
     x0 = [0.004 2 1 1];
     params = fmincon(myObj,x0,[],[]);
     stimulusFreqHzFine = stimulusFreqHz(1):0.1:stimulusFreqHz(end);
     semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,params),'-k');
     hold on
-    semilogx(frequenciesHz, data, '*r');
+    semilogx(stimulusFreqHz, pctBOLDresponse, '*r');
 %}
 
 % Fixed parameters (taken from Figure 6.4 and 6.5 of Watson 1986)
