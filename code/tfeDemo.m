@@ -56,7 +56,11 @@ fprintf('\n');
 %% Create and plot modeled responses
 
 % Set the noise level and report the params
-params0.noiseSd = 0.02;
+params0.noiseSd = 0.5;
+
+% Make the noise pink
+params0.noiseInverseFrequencyPower = 1;
+
 fprintf('Simulated model parameters:\n');
 temporalFit.paramPrint(params0);
 fprintf('\n');
