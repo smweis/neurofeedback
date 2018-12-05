@@ -1,4 +1,4 @@
-function y = watsonTemporalModel(frequenciesHz, params)
+function [y,origY] = watsonTemporalModel(frequenciesHz, params)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
@@ -95,15 +95,18 @@ for i = 1:length(frequenciesHz)
     rawY = abs(rawY);
 
 
-% for quest+ in Matlab, we need to discretize the ouput. Here, we do so 
-% for percent signal between .5 and 1.5, in .1% increments
-
-    discY = discretize(rawY,-.5:.1:1.5);
-    fillerVector = zeros(1,length(-.5:.1:1.5));
+% For quest+ in Matlab, we need to discretize the ouput, meaning
+% we need to return a vector, where each entry is the proportion of 
+% outputs that return for the frequencies inputted. 
+% Here, we do so for percent signal between -.5 and 1.5, in .1% increments
+    
+    bins = -.5:.1:1.5;
+    discY = discretize(rawY,bins);
+    fillerVector = zeros(1,length(bins));
 
 % this counts up all the unique values
     tempy = tabulate(discY);
-    if length(tempy) == 0
+    if isempty(tempy)
         y(i,:) = fillerVector;
     else
 % and returns the proportions of each value (third column from tabulate)
@@ -116,8 +119,14 @@ for i = 1:length(frequenciesHz)
     clear('rawY','discY','tempy');
 end
 
+% this will preserve the original output from watsonTemporalModel, 
+% putting the discrete outputs back into bins. 
+%for i = 1:size(y,1)
+%    origY(i) = bins(y(i,:)==1);
+%end
 
 end
+
 
 
 function Hsub = nStageLowPassFilter(tau,frequenciesHz,filterOrder)

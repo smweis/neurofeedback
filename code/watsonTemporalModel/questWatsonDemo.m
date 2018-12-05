@@ -9,31 +9,33 @@
 %             watsonTemporalModel) where we discretize the output to be 
 %             .5% - 1.5% incremented by .1%
 
-questData = qpInitialize('stimParamsDomainList',{[0:1:64]}, ...
-    'psiParamsDomainList',{0:.0004:.008,-10:2:10,1,1},...
+questData = qpInitialize('stimParamsDomainList',{[0:.25:32]}, ...
+    'psiParamsDomainList',{0:.0004:.01,0:.5:5,1,1},...
     'qpPF',@watsonTemporalModel,...
     'qpOutcomeF',@(x) qpSimulatedObserver(x,@watsonTemporalModel,[.003,2,2,1]),...
-    'nOutcomes',21);
+    'nOutcomes',21,...
+    'chooseRule','randomFromBestN',...
+    'chooseRuleN',5);
 
 % we'll make a copy so we can show it in two ways
 questDataRand = questData;
 
 
 % these are our simulated psychometric parameters
+
 simulatedPsiParams = [.004,2,1,1];
 
-
-% let's simulate a random observer for 10 trials. 
+% let's simulate a random observer for 1000 trials. 
 % output needs to match watsonTemporalModel where each outcome is a 
 % bin (where 1 = .5% - .6% and 21 = 1.4% - 1.5%
-simulatedObserverRand = randi(21,10,1);
+simulatedObserverRand = randi(21,1000,1);
 
 
 % we can also simulate an observer who is modeled by watsonTemporalModel
 simulatedObserverFun = @(x) qpSimulatedObserver(x,@watsonTemporalModel,simulatedPsiParams);
 
 % the random one
-for i = 1:10
+for i = 1:1000
     stim = qpQuery(questDataRand);
     outcome = simulatedObserverRand(i);
     questDataRand = qpUpdate(questDataRand,stim,outcome);
@@ -50,12 +52,12 @@ fprintf('Max posterior QUEST+ parameters, RANDOM: %f, %f, %f, %f\n', ...
 
 psiParamsFit = qpFit(questDataRand.trialData,questDataRand.qpPF,psiParamsQuest,questDataRand.nOutcomes,...
     'lowerBounds', [0 -10 -1 -1],'upperBounds',[.008 10 1 1]);
-fprintf('Maximum likelihood fit parameters, RANDOM: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+fprintf('Maximum likelihood fit parameters, RANDOM: %f, %f, %f, %f\n', ...
     psiParamsFit(1),psiParamsFit(2),psiParamsFit(3),psiParamsFit(4));
 
 
 % the simulated observer one. Should converge
-for i = 1:10
+for i = 1:1000
     stim = qpQuery(questData);
     outcome = simulatedObserverFun(stim);
     questData = qpUpdate(questData,stim,outcome);
@@ -72,7 +74,7 @@ fprintf('Max posterior QUEST+ parameters, MODEL: %f, %f, %f, %f\n', ...
 
 psiParamsFit = qpFit(questData.trialData,questData.qpPF,psiParamsQuest,questData.nOutcomes,...
     'lowerBounds', [0 -10 -1 -1],'upperBounds',[.008 10 1 1]);
-fprintf('Maximum likelihood fit parameters, MODEL: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+fprintf('Maximum likelihood fit parameters, MODEL: %f, %f, %f, %f\n', ...
     psiParamsFit(1),psiParamsFit(2),psiParamsFit(3),psiParamsFit(4));
 
 

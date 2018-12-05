@@ -1,4 +1,4 @@
-function y = watsonTemporalModel(frequenciesHz, params)
+function [y,origY] = watsonTemporalModel(frequenciesHz, params)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
@@ -75,18 +75,18 @@ centerFilterOrder = 9; % Order of the center (usually fast) filter
 surroundFilterOrder = 10; % Order of the surround (usually slow) filter
 
 % Un-pack the passed parameters
-params_tau = params(:,1);
-params_kappa = params(:,2);
-params_centerAmplitude = params(:,3);
-params_zeta = params(:,4);
+params_tau = params(1);
+params_kappa = params(2);
+params_centerAmplitude = params(3);
+params_zeta = params(4);
 
-% Generate the model. We return y.
+% Generate the model. We return y for each stimulus.
 
 for i = 1:length(frequenciesHz)
 
-    H1 = nStageLowPassFilter(params_tau(i),frequenciesHz(i),centerFilterOrder);
-    H2 = nStageLowPassFilter(params_kappa(i)*params_tau(i),frequenciesHz(i),surroundFilterOrder);
-    rawY = (params_centerAmplitude(i) * H1) - (params_zeta(i)*params_centerAmplitude(i)*H2(i));
+    H1 = nStageLowPassFilter(params_tau,frequenciesHz(i),centerFilterOrder);
+    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz(i),surroundFilterOrder);
+    rawY = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
 
 % The model calculates a vector of complex values that define the Fourier
 % transform of the system output. As we are implementing a model of just
@@ -97,13 +97,14 @@ for i = 1:length(frequenciesHz)
 
 % for quest+ in Matlab, we need to discretize the ouput. Here, we do so 
 % for percent signal between .5 and 1.5, in .1% increments
-
-    discY = discretize(rawY,-.5:.1:1.5);
-    fillerVector = zeros(1,length(-.5:.1:1.5));
+    
+    bins = -.5:.1:1.5;
+    discY = discretize(rawY,bins);
+    fillerVector = zeros(1,length(bins));
 
 % this counts up all the unique values
     tempy = tabulate(discY);
-    if length(tempy) == 0
+    if isempty(tempy)
         y(i,:) = fillerVector;
     else
 % and returns the proportions of each value (third column from tabulate)
@@ -116,8 +117,14 @@ for i = 1:length(frequenciesHz)
     clear('rawY','discY','tempy');
 end
 
+% this will preserve the original output from watsonTemporalModel, 
+% putting the discrete outputs back into bins. 
+%for i = 1:size(y,1)
+%    origY(i) = bins(y(i,:)==1);
+%end
 
 end
+
 
 
 function Hsub = nStageLowPassFilter(tau,frequenciesHz,filterOrder)
