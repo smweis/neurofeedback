@@ -1,4 +1,4 @@
-function [y,origY] = watsonTemporalModel(frequenciesHz, params)
+function y = watsonTemporalModelOriginalForFitting(frequenciesHz, params)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
@@ -59,13 +59,13 @@ function [y,origY] = watsonTemporalModel(frequenciesHz, params)
 %
 % Examples:
 %{
-    stimulusFreqHz = [2,4,8,16,32,64];
-    pctBOLDresponse = [0.4, 0.75, 0.80, 0.37, 0.1, 0.0];
-    myObj = @(p) sqrt(sum((pctBOLDresponse-watsonTemporalModel(stimulusFreqHz,p)).^2));
+    stimulusFreqHz = [0.5 1 2 4 8 16 32 64];
+    pctBOLDresponse = [0.095 0.162 0.327 0.38 0.497 0.711 0.67 0.098];;
+    myObj = @(p) sqrt(sum((pctBOLDresponse-watsonTemporalModelOriginalForFitting(stimulusFreqHz,p)).^2));
     x0 = [0.004 2 1 1];
     params = fmincon(myObj,x0,[],[]);
     stimulusFreqHzFine = stimulusFreqHz(1):0.1:stimulusFreqHz(end);
-    semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,params),'-k');
+    semilogx(stimulusFreqHzFine,watsonTemporalModelOriginal(stimulusFreqHzFine,params),'-k');
     hold on
     semilogx(stimulusFreqHz, pctBOLDresponse, '*r');
 %}
@@ -82,48 +82,17 @@ params_zeta = params(4);
 
 % Generate the model. We return y for each stimulus.
 
-for i = 1:length(frequenciesHz)
-
-    H1 = nStageLowPassFilter(params_tau,frequenciesHz(i),centerFilterOrder);
-    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz(i),surroundFilterOrder);
-    rawY = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
+H1 = nStageLowPassFilter(params_tau,frequenciesHz,centerFilterOrder);
+H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz,surroundFilterOrder);
+y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
 
 % The model calculates a vector of complex values that define the Fourier
 % transform of the system output. As we are implementing a model of just
 % the amplitude component of a temporal transfer function, the absolute
 % value of the model output is returned.
-    rawY = abs(rawY);
+y = abs(y);
 
 
-% for quest+ in Matlab, we need to discretize the ouput. Here, we do so 
-% for percent signal between .5 and 1.5, in .1% increments
-    
-    bins = -.5:.1:1.5;
-    discY = discretize(rawY,bins);
-    fillerVector = zeros(1,length(bins));
-
-% this counts up all the unique values
-    tempy = tabulate(discY);
-    if isempty(tempy)
-        y(i,:) = fillerVector;
-    else
-% and returns the proportions of each value (third column from tabulate)
-        fillerVector(1:length(tempy)) = tempy(:,3)'/100;
-
-        y(i,:) = fillerVector;
-    
-    end
-    
-    clear('rawY','discY','tempy');
-end
-
-% this will preserve the original output from watsonTemporalModel, 
-% putting the discrete outputs back into bins. 
-%for i = 1:size(y,1)
-%    origY(i) = bins(y(i,:)==1);
-%end
-
-end
 
 
 
@@ -141,5 +110,7 @@ function Hsub = nStageLowPassFilter(tau,frequenciesHz,filterOrder)
 % filterOrder -- the number of low-pass filters which are cascaded in
 %                the model
 Hsub = (1i*2*pi*frequenciesHz*tau + 1) .^ (-filterOrder);
+
+end
 
 end

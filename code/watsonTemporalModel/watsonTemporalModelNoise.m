@@ -1,4 +1,4 @@
-function y  = watsonTemporalModel(frequenciesHz, params)
+function [y,origY]  = watsonTemporalModelNoise(frequenciesHz, params)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
@@ -99,6 +99,17 @@ for i = 1:length(frequenciesHz)
 % we need to return a vector, where each entry is the proportion of 
 % outputs that return for the frequencies inputted. 
 % Here, we do so for percent signal between -.5 and 1.5, in .1% increments
+
+% a test to add noise:
+    rawY = normrnd(rawY,.05);
+    origY(i) = rawY;
+    if rawY > 1.4
+        rawY = 1.39;
+    elseif rawY < -.30
+        rawY = -.29;
+    end
+    
+    
     
     
     bins = -.5:.1:1.5;

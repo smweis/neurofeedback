@@ -1,4 +1,4 @@
-function y  = watsonTemporalModel(frequenciesHz, params)
+function y  = watsonTemporalModelSimulator(frequenciesHz, params)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
@@ -81,42 +81,38 @@ params_centerAmplitude = params(3);
 params_zeta = params(4);
 
 % Generate the model. We return y for each stimulus.
+y = zeros(1,length(frequenciesHz));
 
 for i = 1:length(frequenciesHz)
 
     H1 = nStageLowPassFilter(params_tau,frequenciesHz(i),centerFilterOrder);
     H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz(i),surroundFilterOrder);
-    rawY = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
+    y(i) = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
 
 % The model calculates a vector of complex values that define the Fourier
 % transform of the system output. As we are implementing a model of just
 % the amplitude component of a temporal transfer function, the absolute
 % value of the model output is returned.
-    rawY = abs(rawY);
+    y(i) = abs(y(i));
 
 
 % For quest+ in Matlab, we need to discretize the ouput, meaning
 % we need to return a vector, where each entry is the proportion of 
 % outputs that return for the frequencies inputted. 
 % Here, we do so for percent signal between -.5 and 1.5, in .1% increments
-    
-    
-    bins = -.5:.1:1.5;
-    discY = discretize(rawY,bins);
-    fillerVector = zeros(1,length(bins));
-% this counts up all the unique values
-    tempy = tabulate(discY);
-    if isempty(tempy)
-        y(i,:) = fillerVector;
-        
-    else
-% and returns the proportions of each value (third column from tabulate)
-    %    tempy(:,3)'/100
-        fillerVector(1:length(tempy)) = tempy(:,3)'/100;
-        y(i,:) = fillerVector;
-    
+
+% a test to add noise:
+    y(i) = normrnd(y(i),.05);
+    if y(i) > 1.4
+        y(i) = 1.39;
+    elseif y(i) < -.30
+        y(i) = -.29;
     end
-    clear('rawY','discY','tempy');
+    
+    
+    
+    
+
 end
 
 end
