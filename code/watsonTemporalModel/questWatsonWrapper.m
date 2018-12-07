@@ -18,7 +18,7 @@ questData = qpInitialize('stimParamsDomainList',{[.5 1 2 4 8 16 32 64]},...
 
 
 nTrials = 21;
-eventDuration = 120; % how long is a trial
+pctBOLDbins = -.5:.1:1.5;
 
 
 
@@ -46,21 +46,24 @@ kernelStruct.values=hrf;
 % Temporal domain of the stimulus
 % Goes from 0 to 330000 msecs, by 100msecs
 deltaT = 100; % in msecs
-totalTime = 320000; % in msecs. This is a 5:30 duration experiment
+eventDuration = 120; % how long is a trial in increments of deltaT
+totalTime = 253000; % in msecs. Make this 
 stimulusStruct.timebase = linspace(0,totalTime-deltaT,totalTime/deltaT);
 nTimeSamples = size(stimulusStruct.timebase,2);
 
 
+
 % Specify the stimulus struct.
-eventTimes=linspace(1000,321000,nTrials);
+initialDelay = 1000;
+eventTimes=linspace(initialDelay,totalTime-(eventDuration*deltaT),nTrials);
 nInstances=length(eventTimes);
-defaultParamsInfo.nInstances = nInstances;
-stimulusStruct.values = zeros(nTrials,nTimeSamples);
+defaultParamsInfo.nInstances = 1;
+stimulusStruct.values = [];
 
 
 % initialize the response struct
-TR = 800; % in msecs
-responseStruct.timebase = linspace(800,totalTime,totalTime/TR);
+TR = 1000; % in msecs
+responseStruct.timebase = linspace(0,totalTime,totalTime/TR);
 responseStruct.values = zeros(1,length(responseStruct.timebase));
 
 
@@ -73,7 +76,6 @@ thePacket.kernel = kernelStruct;
 thePacket.metaData = [];
 
 
-bins = -.5:.1:1.5;
 
 
 %% The main quest part 
@@ -84,39 +86,37 @@ for i = 1:nTrials
     stim = qpQuery(questData);
     
     % update the stimulus struct
+    defaultParamsInfo.nInstances = i;
+    thePacket.stimulus.values(i,:) = zeros(1,nTimeSamples);
     thePacket.stimulus.values(i,eventTimes(i)/deltaT:eventTimes(i)/deltaT+eventDuration)=1;
 
     
     % INSERT NEUROFEEDBACK CODE IN HERE TO GET RAW V1 value
     % This then gets plugged into the thePacket.response for the stimulus
-    rawV1seed = bins(randi(21));
-    for j = 1:15
-        thePacket.response.values((i-1)*15+1:i*15) = rawV1seed*normrnd(1,.1);
+    %rawV1seed = bins(randi(21));
+    
+    rawV1seed = input('Pick a # ');
+    for j = 1:12
+        thePacket.response.values((j+(i-1)*12)) = rawV1seed + .1 * normrnd(0,1);
     end
     
     
     
     params = temporalFit.fitResponse(thePacket,...
               'defaultParamsInfo', defaultParamsInfo, ...
-              'searchMethod','linearRegression')
+              'searchMethod','linearRegression');
     
-    pctBOLD = params.paramMainMatrix(i)
+    pctBOLD = params.paramMainMatrix(i);
     
+    % for now, need to make sure we're not above ceiling or below floor
     if pctBOLD < -.5
         pctBOLD = -.4;
     elseif pctBOLD > 1.5
         pctBOLD = 1.4;
     end
     
-    outcome = discretize(pctBOLD,bins)
     
-    a = input("Pause [Enter]");
-    if isempty(a)
-        continue
-    else
-        break;
-    end
-    
+    outcome = discretize(pctBOLD,pctBOLDbins);
     
     
     questData = qpUpdate(questData,stim,outcome);
