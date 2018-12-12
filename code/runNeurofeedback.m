@@ -65,14 +65,12 @@ while i < 10000000000
     [mainData(j).acqTime,mainData(j).dataTimepoint,mainData(j).roiSignal,...
      initialDirSize, mainData(j).dicomName] = ...
      checkForNewDicom(scannerPath,roiIndex,initialDirSize,scratchPath);
-
+    
+    % write out a file each time a new one comes in
+    save(fullfile(scratchPath,'mainData'),'mainData');
+ 
+ 
     j = j + 1;
-
-    % Otherwise, we can do stuff in here, rather than in
-    % check_for_new_dicom
-
-    % if we want to write out each iteration...
-    %save(fullfile(subjectPath,'mainData'),'mainData');
 
     pause(0.01);
 end

@@ -10,6 +10,7 @@ subjectPath = [subjectPath filesep subject];
 
 % Path to the scratch directory for saving NIFTIs temporarily and locally.
 scratchPath = getpref('neurofeedback', 'analysisScratchDir');
+mkdir(scratchPath);
 
 % Path to the repository. 
 codePath = getpref('neurofeedback','projectRootDir');
