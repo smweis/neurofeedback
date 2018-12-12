@@ -2,7 +2,7 @@ function y = watsonTemporalModelOriginalForFitting(frequenciesHz, params)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
-%  y = watsonTemporalModel(frequenciesHz, params)
+%  y = watsonTemporalModelOriginalForFitting(frequenciesHz, params)
 %
 % Description:
 %	Calculates the two-component (center-surround) Watson temporal model
@@ -65,7 +65,7 @@ function y = watsonTemporalModelOriginalForFitting(frequenciesHz, params)
     x0 = [0.004 2 1 1];
     params = fmincon(myObj,x0,[],[]);
     stimulusFreqHzFine = stimulusFreqHz(1):0.1:stimulusFreqHz(end);
-    semilogx(stimulusFreqHzFine,watsonTemporalModelOriginal(stimulusFreqHzFine,params),'-k');
+    semilogx(stimulusFreqHzFine,watsonTemporalModelOriginalForFitting(stimulusFreqHzFine,params),'-k');
     hold on
     semilogx(stimulusFreqHz, pctBOLDresponse, '*r');
 %}

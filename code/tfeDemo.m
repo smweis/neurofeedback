@@ -1,3 +1,14 @@
+% tfeDemo
+%
+% This routine generates simulated time-series fMRI data that might arise
+% from the presentation of 12 second blocks of whole-field luminance
+% flicker at different temporal frequencies. The temporal response
+% properties of the corted are defined by the parameteres of Beau Watson's
+% temporal sensitivity model.
+
+
+clear all
+
 
 %% Construct the model object
 temporalFit = tfeIAMP('verbosity','none');
@@ -5,23 +16,51 @@ temporalFit = tfeIAMP('verbosity','none');
 
 %% Temporal domain of the stimulus
 deltaT = 100; % in msecs
-totalTime = 330000; % in msecs. This is a 5:30 duration experiment
+totalTime = 336000; % in msecs. This is a 5:36 duration experiment
 stimulusStruct.timebase = linspace(0,totalTime-deltaT,totalTime/deltaT);
 nTimeSamples = size(stimulusStruct.timebase,2);
 
 
 %% Specify the stimulus struct.
-% We will create a set of impulses of various amplitudes in a stimulus
-% matrix. There will be an event every
-eventTimes=linspace(1000,321000,21);
+% We will create a set of stimulus blocks, each 12 seconds in duration.
+% Every 6th stimulus block (starting with the first) is a "zero frequency"
+% stimulus condition and thus will serve as the reference condition for a
+% linear regression model
+eventTimes=[];
+eventDuration=12000; % block duration in msecs
+for ii=0:27
+    if mod(ii,6)~=0
+        eventTimes(end+1) = ii*eventDuration;
+    end
+end
 nInstances=length(eventTimes);
-eventDuration=50; % pulse duration in msecs
 defaultParamsInfo.nInstances = nInstances;
-
 for ii=1:nInstances
     stimulusStruct.values(ii,:)=zeros(1,nTimeSamples);
-    stimulusStruct.values(ii,eventTimes(ii)/deltaT:eventTimes(ii)/deltaT+eventDuration)=1;
+    stimulusStruct.values(ii,eventTimes(ii)/deltaT:eventTimes(ii)/deltaT+eventDuration/deltaT)=1;
 end
+
+% Create a set of parameter values that are derived from the Watson model
+% We first assign a random stimulus frequency to each stimulus instance
+freqSet = [2 4 8 16 32 64];
+freqInstances = freqSet(randi(length(freqSet),nInstances,1));
+
+% Now obtain the BOLD fMRI %change amplitude response for each frequency
+% given a set of parameters for the Watson model
+watsonParams = [0.004 2 1 1];
+modelAmplitudes = watsonTemporalModelOriginalForFitting(freqInstances, watsonParams);
+
+
+%% Get the default forward model parameters
+params0 = temporalFit.defaultParams('defaultParamsInfo', defaultParamsInfo);
+
+% Set the amplitude params to those defined by the Watson model above
+params0.paramMainMatrix=modelAmplitudes';
+
+fprintf('Default model parameters:\n');
+temporalFit.paramPrint(params0);
+fprintf('\n');
+
 
 
 %% Define a kernelStruct. In this case, a double gamma HRF
@@ -41,16 +80,6 @@ kernelStruct.values=hrf;
 [ kernelStruct ] = normalizeKernelArea( kernelStruct );
 
 
-%% Get the default forward model parameters
-params0 = temporalFit.defaultParams('defaultParamsInfo', defaultParamsInfo);
-
-% Set the amplitude params to a random set of values to create the
-% simulated signal
-params0.paramMainMatrix=rand(nInstances,1);
-
-fprintf('Default model parameters:\n');
-temporalFit.paramPrint(params0);
-fprintf('\n');
 
 
 %% Create and plot modeled responses
