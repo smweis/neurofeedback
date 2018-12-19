@@ -1,14 +1,16 @@
-function [y,origY]  = watsonTemporalModelNoise(frequenciesHz, params)
+function y  = qpWatsonTemporalModel(frequenciesHz, params)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
-%  y = watsonTemporalModel(frequenciesHz, params)
+%  y = qpWatsonTemporalModel(frequenciesHz, params)
 %
 % Description:
 %	Calculates the two-component (center-surround) Watson temporal model
 %   The parameters (p) defines both the "center" and the "surround" linear
 %   filter components. The entire model is the difference between these two
-%   filter components.
+%   filter components. 
+% 
+%   For use with the Matlab implementation of questPlus. 
 %
 %	The model is expressed in Eq 45 of:
 %
@@ -55,19 +57,14 @@ function [y,origY]  = watsonTemporalModelNoise(frequenciesHz, params)
 %                                   the surround filter
 %
 % Outputs:
-%   y                     - 1xn vector of modeled amplitude values.
+%   y                     - nxm vector where n is the number of frequenciesHz,
+%                           m is the number of bins (default is 21, 
+%                           between -.5 and 1.5). Each row vector 
+%                           is zero everywhere and 1 where output is. 
 %
 % Examples:
 %{
-    stimulusFreqHz = [2,4,8,16,32,64];
-    pctBOLDresponse = [0.4, 0.75, 0.80, 0.37, 0.1, 0.0];
-    myObj = @(p) sqrt(sum((pctBOLDresponse-watsonTemporalModel(stimulusFreqHz,p)).^2));
-    x0 = [0.004 2 1 1];
-    params = fmincon(myObj,x0,[],[]);
-    stimulusFreqHzFine = stimulusFreqHz(1):0.1:stimulusFreqHz(end);
-    semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,params),'-k');
-    hold on
-    semilogx(stimulusFreqHz, pctBOLDresponse, '*r');
+    
 %}
 
 % Fixed parameters (taken from Figure 6.4 and 6.5 of Watson 1986)
@@ -98,18 +95,8 @@ for i = 1:length(frequenciesHz)
 % For quest+ in Matlab, we need to discretize the ouput, meaning
 % we need to return a vector, where each entry is the proportion of 
 % outputs that return for the frequencies inputted. 
-% Here, we do so for percent signal between -.5 and 1.5, in .1% increments
 
-% a test to add noise:
-    rawY = normrnd(rawY,.05);
-    origY(i) = rawY;
-    if rawY > 1.4
-        rawY = 1.39;
-    elseif rawY < -.30
-        rawY = -.29;
-    end
-    
-    
+% Here, we do so for percent signal between -.5 and 1.5, in .1% increments
     
     
     bins = -.5:.1:1.5;

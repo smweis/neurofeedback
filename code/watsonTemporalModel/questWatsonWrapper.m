@@ -14,14 +14,14 @@ mainDataLoc = '/tmp/neurofeedback/mainData.mat';
 % qpPf - our psychometric function
 % qpOutcomeF - this needs to be specified or it defaults
 % nOutcomes - our possible number of outcomes (based on
-%             watsonTemporalModel) where we discretize the output to be 
+%             qpWatsonTemporalModel) where we discretize the output to be 
 %             .5% - 1.5% incremented by .1%
 
 
 
 questData = qpInitialize('stimParamsDomainList',{[.5 1 2 4 8 16 32 64]},...
     'psiParamsDomainList',{-.00012:.0004:.01,.5:.5:5,1:4,.25:.5:2.25},...
-    'qpPF',@watsonTemporalModel,...
+    'qpPF',@qpWatsonTemporalModel,...
     'nOutcomes',21);
 
 questDataCopy = questData;

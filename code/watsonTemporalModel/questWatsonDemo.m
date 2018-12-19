@@ -7,10 +7,10 @@ stimulusFreqHzFine = stimulusDomain(1):0.1:stimulusDomain(end);
 figure
 stimulusFreqHz = stimulusDomain;
 pctBOLDresponse = [0.095 0.162 0.327 0.38 0.497 0.711 0.67 0.098];
-myObj = @(p) sqrt(sum((pctBOLDresponse-watsonTemporalModelOriginalForFitting(stimulusFreqHz,p)).^2));
+myObj = @(p) sqrt(sum((pctBOLDresponse-watsonTemporalModel(stimulusFreqHz,p)).^2));
 x0 = [0.004 2 1 1];
 params = fmincon(myObj,x0,[],[]);
-semilogx(stimulusFreqHzFine,watsonTemporalModelOriginal(stimulusFreqHzFine,params),'-k');
+semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,params),'-k');
 hold on
 semilogx(stimulusFreqHz, pctBOLDresponse, '*r');
 hold off
@@ -25,21 +25,21 @@ simulatedPsiParams = params;
 % qpPf - our psychometric function
 % qpOutcomeF - this needs to be specified or it defaults
 % nOutcomes - our possible number of outcomes (based on
-%             watsonTemporalModel) where we discretize the output to be 
+%             qpWatsonTemporalModel) where we discretize the output to be 
 %             .5% - 1.5% incremented by .1%
 
 
 
 questData = qpInitialize('stimParamsDomainList',{stimulusDomain},...
     'psiParamsDomainList',{-.0004:.0004:.01,.5:.5:5,1:4,.25:.5:2.25},...
-    'qpPF',@watsonTemporalModel,...
-    'qpOutcomeF',@(x) qpSimulatedObserver(x,@watsonTemporalModelNoise,simulatedPsiParams),...
+    'qpPF',@qpWatsonTemporalModel,...
+    'qpOutcomeF',@(x) qpSimulatedObserver(x,@qpWatsonTemporalModel,simulatedPsiParams),...
     'nOutcomes',21);
 
 
 
-% we can also simulate an observer who is modeled by watsonTemporalModel
-simulatedObserverFun = @(x)qpSimulatedObserver(x,@watsonTemporalModelNoise,simulatedPsiParams);
+% we can also simulate an observer who is modeled by TemporalModel
+simulatedObserverFun = @(x)qpSimulatedObserver(x,@qpWatsonTemporalModel,simulatedPsiParams);
 figure
 hold on
 
@@ -59,7 +59,7 @@ for i = 1:1000
             b(j) = bins([questData.trialData(j).outcome]);
         end
         semilogx([questData.trialData.stim],b,'*','color',colorRand); hold on;
-        semilogx(stimulusFreqHzFine,watsonTemporalModelOriginal(stimulusFreqHzFine,psiParamsQuest),'-','color',colorRand);
+        semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,psiParamsQuest),'-','color',colorRand);
 
 
         prompt = 'Stop? [Type anything]: ';
@@ -93,7 +93,7 @@ fprintf('Max posterior QUEST+ parameters, MODEL: %f, %f, %f, %f\n', ...
 
 
 % let's simulate a random observer for 1000 trials. 
-% output needs to match watsonTemporalModel where each outcome is a 
+% output needs to match qpWatsonTemporalModel where each outcome is a 
 % bin (where 1 = .5% - .6% and 21 = 1.4% - 1.5%
 simulatedObserverRand = randi(21,1000,1);
 
