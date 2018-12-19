@@ -74,12 +74,8 @@ while i < 10000000000
      checkForNewDicom(scannerPath,roiIndex,initialDirSize,scratchPath);
  
  
- 
-    % Vectorize roiSignal
-    for j = 1:length(mainData)
-        for k = 1:length(mainData(j).roiSignal)
-            roiSignal(end+1) = mainData(j).roiSignal(k);
-        end
+    for k = 1:length(mainData(j).roiSignal)
+        roiSignal(end+1) = mainData(j).roiSignal(k);
     end
  
     % Mean center roiSignal and take out linear trends
@@ -134,9 +130,10 @@ while i < 10000000000
     stim = qpQuery(questData);
     
     % write the suggeste stim to a new text file
-    nextStimNum = dir(fullfile(subjectPath,'stimLog'));
-    nextStimFileName = horzcat('nextStimuli',str(nextStimNum),'.txt');
-    fidw = fopen(nextStimFileName,'w');
+    nextStimNum = length(dir(fullfile(subjectPath,'stimLog'))) + 1;
+    nextStimFileName = horzcat('nextStimuli',num2str(nextStimNum),'.txt');
+    nextStimFullPath = fullfile(subjectPath,'stimLog',nextStimFileName);
+    fidw = fopen(nextStimFullPath,'w');
     fprintf(fidw,'%d',stim);
     fclose(fidw);
 
