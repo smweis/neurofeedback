@@ -61,6 +61,7 @@ mainData.roiSignal = {}; % whatever signal is the output (default is mean)
 % convert it to NIFTI, and do some processing on the NIFTI.
 % (Extract ROI, compute mean signal of the ROI).
 
+% We could initialize this with the number of TRs, if known in advance. 
 roiSignal = [];
 
 i = 0;
@@ -73,7 +74,7 @@ while i < 10000000000
      initialDirSize, mainData(j).dicomName] = ...
      checkForNewDicom(scannerPath,roiIndex,initialDirSize,scratchPath);
  
- 
+    % turn latest acquired dicoms back into a vector. 
     for k = 1:length(mainData(j).roiSignal)
         roiSignal(end+1) = mainData(j).roiSignal(k);
     end
@@ -91,22 +92,16 @@ while i < 10000000000
         'defaultParamsInfo', defaultParamsInfo, ...
         'searchMethod','linearRegression');
     
-    % get the latest list of actual Stimuli that have been run
-    s = dir(fullfile(subjectPath,'actualStimuli.txt'));
     
-    if s.bytes == 0
-        continue;
-    else
-        fidr = fopen(fullfile(subjectPath,'actualStimuli.txt'),'r');
-        actualStims = fscanf(fidr,'%d');
-        fclose(fidr);
-    end
+    % get the latest list of actual Stimuli that have been run
+    actualStims = readActualStimuli(fullfile(subjectPath,'actualStimuli.txt'));
     
     
     % re-start the questData structure from when it was initialized;
     questData = questDataCopy;
     
     
+    %% Turn this into a function. 
     
     % adjust pctBOLDbins if necessary creating 20 bins, evenly spaced, 
     % between the observed min and max
@@ -119,8 +114,7 @@ while i < 10000000000
     end
     pctBOLDbins = pctBOLDbinsMin:(pctBOLDbinsMax-pctBOLDbinsMin)/20:pctBOLDbinsMax;
     
-    
-    % run Q+ update with every stim so far and every outcome as given by TFE
+    %% Run Q+ update with every stim so far and every outcome as given by TFE
     for k = 1:length(actualStims)
         outcome = discretize(params.paramMainMatrix(k),pctBOLDbins);
         questData = qpUpdate(questData,actualStims(k),outcome);
@@ -129,6 +123,8 @@ while i < 10000000000
     % get the next suggested stim from Q+
     stim = qpQuery(questData);
     
+    
+    %% Turn this into a function. 
     % write the suggeste stim to a new text file
     nextStimNum = length(dir(fullfile(subjectPath,'stimLog'))) + 1;
     nextStimFileName = horzcat('nextStimuli',num2str(nextStimNum),'.txt');
@@ -137,7 +133,7 @@ while i < 10000000000
     fprintf(fidw,'%d',stim);
     fclose(fidw);
 
-    
+    %% Next iteration
     j = j + 1;
 
     pause(0.01);

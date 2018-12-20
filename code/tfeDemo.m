@@ -37,7 +37,7 @@ nInstances=length(eventTimes);
 defaultParamsInfo.nInstances = nInstances;
 for ii=1:nInstances
     stimulusStruct.values(ii,:)=zeros(1,nTimeSamples);
-    stimulusStruct.values(ii,eventTimes(ii)/deltaT:eventTimes(ii)/deltaT+eventDuration/deltaT)=1;
+    stimulusStruct.values(ii,(eventTimes(ii)/deltaT)+1:eventTimes(ii)/deltaT+eventDuration/deltaT)=1;
 end
 
 % Create a set of parameter values that are derived from the Watson model
@@ -48,7 +48,7 @@ freqInstances = freqSet(randi(length(freqSet),nInstances,1));
 % Now obtain the BOLD fMRI %change amplitude response for each frequency
 % given a set of parameters for the Watson model
 watsonParams = [0.004 2 1 1];
-modelAmplitudes = watsonTemporalModelOriginalForFitting(freqInstances, watsonParams);
+modelAmplitudes = watsonTemporalModel(freqInstances, watsonParams);
 
 
 %% Get the default forward model parameters
