@@ -114,11 +114,18 @@ while i < 10000000000
     % get the next suggested stim from Q+
     stim = qpQuery(questData);
     
-
+    
+    %% Turn this into a function. 
     % write the suggeste stim to a new text file
     pathToNewStimTextFiles = fullfile(subjectPath,'stimLog');
-    writeNewStimSuggestion(stim,horzcat(pathToNewStimTextFiles,'/*.txt'));
+    writeNewStimSuggestion(stim,horzc);
+    nextStimFileName = horzcat('nextStimuli',num2str(nextStimNum),'.txt');
+    nextStimFullPath = fullfile(subjectPath,'stimLog',nextStimFileName);
+    fidw = fopen(nextStimFullPath,'w');
+    fprintf(fidw,'%d',stim);
+    fclose(fidw);
 
+    %% Next iteration
     j = j + 1;
 
     pause(0.01);
