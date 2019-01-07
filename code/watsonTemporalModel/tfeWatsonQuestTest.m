@@ -36,11 +36,12 @@ end
 % We first assign a random stimulus frequency to each stimulus instance
 freqSet = [2 4 8 16 32 64];
 freqInstances = freqSet(randi(length(freqSet),nInstances,1));
+%freqInstances = [2,4,8,16,32,64,2,4,8,16,32,64,2,4,8,16,32,64,2,4,8,16,32];
 
 % Now obtain the BOLD fMRI %change amplitude response for each frequency
 % given a set of parameters for the Watson model
 
-% these are estimated from Spitschan J. Neuro. But appear broken?
+% these are estimated from Spitschan J. Neuro.
 %watsonParams = [-0.00251422630566837,1.00595645717933,3.79738894349084,0.951504640228191];
 watsonParams = [0.004 2 1 1];
 modelAmplitudes = watsonTemporalModel(freqInstances, watsonParams);
@@ -80,10 +81,10 @@ kernelStruct.values=hrf;
 %% Create and plot modeled responses
 
 % Set the noise level and report the params
-params0.noiseSd = 0.5;
+params0.noiseSd = 0;
 
 % Make the noise pink
-params0.noiseInverseFrequencyPower = 1;
+params0.noiseInverseFrequencyPower = 0;
 
 fprintf('Simulated model parameters:\n');
 temporalFit.paramPrint(params0);
@@ -100,7 +101,7 @@ hold on
 plot(stimulusStruct.timebase/1000,stimulusStruct.values(1,:),'-k','DisplayName','stimulus');
 
 % Now plot the response with convolution and noise, as well as the kernel
-modelResponseStruct = temporalFit.computeResponse(params0,stimulusStruct,kernelStruct,'AddNoise',true);
+modelResponseStruct = temporalFit.computeResponse(params0,stimulusStruct,kernelStruct,'AddNoise',false);
 
 temporalFit.plot(modelResponseStruct,'NewWindow',false,'DisplayName','noisy BOLD response');
 plot(kernelStruct.timebase/1000,kernelStruct.values/max(kernelStruct.values),'-b','DisplayName','kernel');
@@ -125,7 +126,7 @@ thePacket.metaData = [];
 
 
 questData = qpInitialize('stimParamsDomainList',{[2 4 8 16 32 64]},...
-    'psiParamsDomainList',{-.00012:.0004:.01,.5:.5:5,0:.5:2,.25:.5:2.25},...
+    'psiParamsDomainList',{-.00012:.0004:.01,0:2,0:2,0:2},...
     'qpPF',@qpWatsonTemporalModel,...
     'nOutcomes',21);
 
@@ -147,6 +148,9 @@ sampleSignal = testRoiSignal(1);
 
 latestPoint = 1;
 
+
+
+
 while latestPoint < length(testRoiSignal)
     if length(testRoiSignal) - latestPoint < 5
         sampleLength = length(testRoiSignal) - latestPoint;
@@ -154,9 +158,11 @@ while latestPoint < length(testRoiSignal)
         sampleLength = randi(5);
     end
     
+    clear sampleSignal
+    
     latestPoint = latestPoint + sampleLength; 
 
-    sampleSignal(end+1:end+sampleLength) = testRoiSignal(latestPoint + 1 - sampleLength:latestPoint);
+    sampleSignal = testRoiSignal(1:latestPoint);
 
     sampleSignal = detrend(sampleSignal);
     sampleSignal = detrend(sampleSignal,'constant');
@@ -180,8 +186,8 @@ while latestPoint < length(testRoiSignal)
         questData = qpUpdate(questData,freqInstances(i),outcome);
     end
     
-    stim = qpQuery(questData);
-        
+
+
 end
 
 
@@ -191,12 +197,6 @@ end
     temporalFit.fitResponse(thePacket,...
     'defaultParamsInfo', defaultParamsInfo, ...
     'searchMethod','linearRegression');
-
-
-
-fprintf('Model parameter from fits:\n');
-temporalFit.paramPrint(paramsFit);
-fprintf('\n');
 
 
 fprintf('Model parameter from fits:\n');
@@ -211,12 +211,15 @@ plot(sampleSignal,'r');
 
 % what does Quest think?
 maxParamGuess = max(questData.posterior); 
-
 maxIndex = questData.posterior == maxParamGuess;
-
 paramGuesses = questData.psiParamsDomain(maxIndex,:);
 
 hold off;
 figure;
-watsonRecoveredData = watsonTemporalModel([questData.trialData.stim],paramGuesses(1,:));
-semilogx([questData.trialData.stim],watsonRecoveredData,'*r');
+hold on;
+
+for i = 1:length(paramGuesses)
+    watsonRecoveredData = watsonTemporalModel([questData.trialData.stim],paramGuesses(i,:));
+    semilogx([questData.trialData.stim],watsonRecoveredData,'*r');
+end
+
