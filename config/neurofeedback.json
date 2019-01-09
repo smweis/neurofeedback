@@ -25,6 +25,19 @@
 		"update": "",
 		"url": ""
 	},
+	{
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "Psychtoolbox-3",
+		"pathPlacement": "append",
+		"subfolder": "Psychtoolbox",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": "https://github.com/Psychtoolbox-3/Psychtoolbox-3.git"
+	},
  	{
 		"flavor": "",
 		"hook": "",

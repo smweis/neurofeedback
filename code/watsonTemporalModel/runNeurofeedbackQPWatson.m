@@ -115,7 +115,7 @@ while i < 10000000000
     stim = qpQuery(questData);
     
 
-    % write the suggeste stim to a new text file
+    % write the suggested stim to a new text file
     pathToNewStimTextFiles = fullfile(subjectPath,'stimLog');
     writeNewStimSuggestion(stim,horzcat(pathToNewStimTextFiles,'/*.txt'));
 
