@@ -121,7 +121,7 @@ while i < 10000000000
     pctBOLDbins = changePctSignalBins(params.paramMainMatrix,21);
     
     % Run Q+ update with every stim so far and every outcome as given by TFE
-    for k = 1:length(actualStimsNoZero)
+    for k = 1:length(actualStims)
         outcome = discretize(params.paramMainMatrix(k),pctBOLDbins);
         questData = qpUpdate(questData,actualStimsNoZero(k),outcome);
     end

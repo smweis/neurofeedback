@@ -1,4 +1,4 @@
-function play_flash(stimFreq,blockDur,scanDur,tChar,display)
+function play_flash(stimFreq,blockDur,scanDur,tChar,display,subjectPath)
 
 %% Displays a black/white full-field flicker
 %
@@ -15,7 +15,7 @@ function play_flash(stimFreq,blockDur,scanDur,tChar,display)
 %   display.distance    - 106.5; % distance from screen (cm) - (UPenn - SC3T);
 %   display.width       - 69.7347; % width of screen (cm) - (UPenn - SC3T);
 %   display.height      - 39.2257; % height of screen (cm) - (UPenn - SC3T);
-%
+%   subjectPath         - passed from default for tbUseProject('neurofeedback')
 %   Stimulus will flicker at 'stimFreq', occilating between flicker and
 %   grey screen based on 'blockDur'
 %
@@ -50,6 +50,11 @@ if ~exist('display','var') || isempty(display)
     display.width = 69.7347; % width of screen (cm) - (UPenn - SC3T);
     display.height = 39.2257; % height of screen (cm) - (UPenn - SC3T);
 end
+
+if ~exist('subjectPath','var') || isempty(subjectPath)
+    [subjectPath] = getPaths('TOME_3040_TEST');
+end
+
 %% Save input variables
 params.stimFreq         = stimFreq;
 params.blockDur         = blockDur;
@@ -94,7 +99,7 @@ res = Screen('Resolution',max(Screen('screens')));
 display.resolution = [res.width res.height];
 PsychImaging('PrepareConfiguration');
 PsychImaging('AddTask', 'General', 'UseRetinaResolution');
-[winPtr, windowRect]            = PsychImaging('OpenWindow', screenid, grey);
+[winPtr, windowRect]            = PsychImaging('OpenWindow', screenid, grey, [10, 10, 20, 20]);
 [mint,~,~] = Screen('GetFlipInterval',winPtr,200);
 display.frameRate = 1/mint; % 1/monitor flip interval = framerate (Hz)
 display.screenAngle = pix2angle( display, display.resolution );
@@ -139,21 +144,29 @@ try
         if thisBlock > blockNum
             blockNum = thisBlock;
 
-            if mod(blockNum,6) % every sixth block, display steady screen
+            if mod(blockNum,6) == 0 % every sixth block, display steady screen
+                trial
                 stimFreq = 0;
                 
             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*')))
-                
+                d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
+                [~,idx] = max([d.datenum]);
+                filename = d(idx).name;
+                readFid = fopen(fullfile(subjectPath,'stimLog',filename),'r');
+                stimFreq = fscanf(readFid,'%d');
+                fclose(readFid);
+
             
             else % if no QUEST+ stim yet, randomly pick a frequency
                 whichFreq = randi(6);
                 stimFreq = allFreqs(whichFreq);
             end
             
-            fopen(fid,'w');
+            fid = fopen(fullfile(subjectPath,'actualStimuli.txt'),'a');
             fprintf(fid,'%d\n',stimFreq);
             fclose(fid);
-            disp(['Trial Number - ' blockNum '; Frequency - ' stimFreq]);
+            
+            disp(['Trial Number - ' num2str(blockNum) '; Frequency - ' num2str(stimFreq)]);
             
         end
         

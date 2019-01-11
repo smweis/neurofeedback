@@ -99,7 +99,7 @@ res = Screen('Resolution',max(Screen('screens')));
 display.resolution = [res.width res.height];
 PsychImaging('PrepareConfiguration');
 PsychImaging('AddTask', 'General', 'UseRetinaResolution');
-[winPtr, windowRect]            = PsychImaging('OpenWindow', screenid, grey);
+[winPtr, windowRect]            = PsychImaging('OpenWindow', screenid, grey, [10, 10, 20, 20]);
 [mint,~,~] = Screen('GetFlipInterval',winPtr,200);
 display.frameRate = 1/mint; % 1/monitor flip interval = framerate (Hz)
 display.screenAngle = pix2angle( display, display.resolution );
@@ -144,27 +144,34 @@ try
         if thisBlock > blockNum
             blockNum = thisBlock;
 
-            if mod(blockNum,6) % every sixth block, display steady screen
+            if mod(blockNum,6) == 0 % every sixth block, display steady screen
+                trialTypeString = 'baseline';
                 stimFreq = 0;
                 
             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*')))
+                
                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
                 [~,idx] = max([d.datenum]);
                 filename = d(idx).name;
+                nextStimNum = sscanf(filename,'nextStimuli%d');
+                trialTypeString = ['quest recommendation - ' num2str(nextStimNum)];
                 readFid = fopen(fullfile(subjectPath,'stimLog',filename),'r');
                 stimFreq = fscanf(readFid,'%d');
                 fclose(readFid);
 
             
             else % if no QUEST+ stim yet, randomly pick a frequency
+                trialTypeString = 'random';
                 whichFreq = randi(6);
                 stimFreq = allFreqs(whichFreq);
             end
             
-            fopen(fid,'w');
+            fid = fopen(fullfile(subjectPath,'actualStimuli.txt'),'a');
             fprintf(fid,'%d\n',stimFreq);
             fclose(fid);
-            disp(['Trial Number - ' blockNum '; Frequency - ' stimFreq]);
+            
+            disp(['Trial Type - ' trialTypeString]);
+            disp(['Trial Number - ' num2str(blockNum) '; Frequency - ' num2str(stimFreq)]);
             
         end
         

@@ -99,7 +99,7 @@ for i = 1:length(frequenciesHz)
 % Here, we do so for percent signal between -.5 and 1.5, in .1% increments
     
     
-    bins = -.5:.1:1.5;
+    bins = -1.5:.2:2.5;
     discY = discretize(rawY,bins);
     fillerVector = zeros(1,length(bins));
 % this counts up all the unique values

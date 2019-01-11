@@ -1,6 +1,6 @@
 
-clear all
-
+clear all;
+close all;
 
 %% Construct the model object
 temporalFit = tfeIAMP('verbosity','none');
@@ -126,7 +126,7 @@ thePacket.metaData = [];
 
 
 questData = qpInitialize('stimParamsDomainList',{[2 4 8 16 32 64]},...
-    'psiParamsDomainList',{-.00012:.0004:.01,0:2,0:2,0:2},...
+    'psiParamsDomainList',{-.008:.001:.008,2,1,1},...
     'qpPF',@qpWatsonTemporalModel,...
     'nOutcomes',21);
 
@@ -148,7 +148,7 @@ sampleSignal = testRoiSignal(1);
 
 latestPoint = 1;
 
-
+pctBOLDbins = -1.5:.2:2.5;
 
 
 while latestPoint < length(testRoiSignal)
@@ -177,7 +177,7 @@ while latestPoint < length(testRoiSignal)
     stimNumber = ceil(length(sampleSignal)/12);
     stimNumberReal = stimNumber - floor(stimNumber/6) - 1;
     
-    pctBOLDbins = changePctSignalBins(params.paramMainMatrix,21);
+   % pctBOLDbins = changePctSignalBins(params.paramMainMatrix,21);
     
     questData = questDataCopy;
     
