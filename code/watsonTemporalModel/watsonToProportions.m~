@@ -12,8 +12,7 @@ function predictedProportions = watsonToProportions(frequency, freqRange, nCateg
 %{
     figure; hold on;
     i = 0;
-    bins = 5;
-    colorm = rand(bins,3);
+    bins = 9;
     for freq = 0:0.1:64
         i = i + 1;
         predictedProportions = watsonToProportions(freq, [0 64], bins, [0.004 2 1 1]);
@@ -21,7 +20,7 @@ function predictedProportions = watsonToProportions(frequency, freqRange, nCateg
        
 
         for j = 1:bins
-            semilogx(freq,predictedProportions(j),'.','color',colorm(j,:));
+            semilogx(freq,predictedProportions(1),'color',rand(1,3));
         end
     end
     max(maxProbabilityMiss)
