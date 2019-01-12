@@ -1,4 +1,4 @@
-function predictedProportions = watsonToProportions(frequency, freqRange, nCategories, params)
+function predictedProportions = watsonToProportions(frequency, params,freqRange=[0,64], nCategories=21)
 % Express the returned value from the Watson model as amplitude proportions
 %
 % Syntax:
@@ -37,7 +37,9 @@ y = watsonTemporalModel(freqSupport, params);
 
 % Scale the Watson model to have unit amplitude
 y = y - min(y);
-y = y ./ max(y);
+if max(y) ~= 0
+    y = y ./ max(y);
+end
 
 % Loop over the categories and report the proportion value for the
 % specified frequency in each amplitude category

@@ -40,18 +40,17 @@ freqSupport = freqRange(1):0.01:freqRange(2);
 y = watsonTemporalModel(freqSupport, params);
 
 % Where is the passed frequency value in frequence support
-predictedProportions = zeros(length(frequency),nCategories);
 
 for jj = 1:length(frequency)
     [~,freqIdxInSupport] = min(abs(freqSupport-frequency(jj)));
 
 % Scale the Watson model to have unit amplitude
     y = y - min(y);
-    if max(y) ~= 0
-        y = y ./ max(y);
-    end
+    y = y ./ max(y);
+
 % Loop over the categories and report the proportion value for the
 % specified frequency in each amplitude category
+    predictedProportions = zeros(1,nCategories);
     catBinSize = 1 / nCategories;
     for ii = 1:nCategories
     
@@ -59,21 +58,20 @@ for jj = 1:length(frequency)
         distFromCatCenter = y(freqIdxInSupport) - categoryCenter;
         if ii == 1
             if distFromCatCenter < 0 
-                predictedProportions(jj,ii) = 1;
-            else
-                predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize); 
-            end
-        elseif ii == nCategories
-            if distFromCatCenter > 0
-                predictedProportions(jj,ii) = 1;
-            else
-                predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize);
-            end
+            predictedProportions(ii) = 1;
         else
-            predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize);
+            predictedProportions(ii) = (1 - abs(distFromCatCenter)/catBinSize); 
         end
-    
+    elseif ii == nCategories
+        if distFromCatCenter > 0
+            predictedProportions(ii) = 1;
+        else
+            predictedProportions(ii) = (1 - abs(distFromCatCenter)/catBinSize);
+        end
+    else
+        predictedProportions(ii) = (1 - abs(distFromCatCenter)/catBinSize);
     end
+    
 end
 
 
