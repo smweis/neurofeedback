@@ -1,4 +1,4 @@
-function predictedProportions = watsonToProportions(frequency, params,freqRange=[0,64], nCategories=21)
+function predictedProportions = watsonToProportions(frequency, params,freqRange, nCategories)
 % Express the returned value from the Watson model as amplitude proportions
 %
 % Syntax:

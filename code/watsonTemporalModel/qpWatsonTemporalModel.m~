@@ -16,20 +16,25 @@ function predictedProportions = qpWatsonTemporalModel(frequency, params)
     colorm = rand(bins,3);
     for freq = 0:0.1:64
         i = i + 1;
-        predictedProportions = watsonToProportions(freq, [0 64], bins, [0.004 2 1 1]);
+        predictedProportions = qpWatsonTemporalModel(freq, [0.004 2 1 1]);
         maxProbabilityMiss(i) = abs(sum(predictedProportions)) - 1;
        
 
         for j = 1:bins
             semilogx(freq,predictedProportions(j),'.','color',colorm(j,:));
+            
         end
     end
+    watsonData = watsonTemporalModel(0:.1:64,[.004 2 1 1]);
+    hold on;
+    plot(0:.1:64,watsonData);
+        hold on; legend('cat1','cat2','cat3','cat4','cat5');
     max(maxProbabilityMiss)
 %}
 
 
 freqRange=[0 64];
-nCategories=21;
+nCategories=5;
 
 % Obtain the Watson model for these params across the frequency range at a
 % high resolution
@@ -40,17 +45,18 @@ freqSupport = freqRange(1):0.01:freqRange(2);
 y = watsonTemporalModel(freqSupport, params);
 
 % Where is the passed frequency value in frequence support
+predictedProportions = zeros(length(frequency),nCategories);
 
 for jj = 1:length(frequency)
     [~,freqIdxInSupport] = min(abs(freqSupport-frequency(jj)));
 
 % Scale the Watson model to have unit amplitude
     y = y - min(y);
-    y = y ./ max(y);
-
+    if max(y) ~= 0
+        y = y ./ max(y);
+    end
 % Loop over the categories and report the proportion value for the
 % specified frequency in each amplitude category
-    predictedProportions = zeros(1,nCategories);
     catBinSize = 1 / nCategories;
     for ii = 1:nCategories
     
@@ -58,20 +64,21 @@ for jj = 1:length(frequency)
         distFromCatCenter = y(freqIdxInSupport) - categoryCenter;
         if ii == 1
             if distFromCatCenter < 0 
-            predictedProportions(ii) = 1;
+                predictedProportions(jj,ii) = 1;
+            else
+                predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize); 
+            end
+        elseif ii == nCategories
+            if distFromCatCenter > 0
+                predictedProportions(jj,ii) = 1;
+            else
+                predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize);
+            end
         else
-            predictedProportions(ii) = (1 - abs(distFromCatCenter)/catBinSize); 
+            predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize);
         end
-    elseif ii == nCategories
-        if distFromCatCenter > 0
-            predictedProportions(ii) = 1;
-        else
-            predictedProportions(ii) = (1 - abs(distFromCatCenter)/catBinSize);
-        end
-    else
-        predictedProportions(ii) = (1 - abs(distFromCatCenter)/catBinSize);
-    end
     
+    end
 end
 
 

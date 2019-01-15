@@ -12,18 +12,30 @@ function predictedProportions = qpWatsonTemporalModel(frequency, params)
 %{
     figure; hold on;
     i = 0;
-    bins = 5;
+    labels = {};
+    bins = 21;
     colorm = rand(bins,3);
     for freq = 0:0.1:64
         i = i + 1;
-        predictedProportions = watsonToProportions(freq, [0 64], bins, [0.004 2 1 1]);
+        predictedProportions = qpWatsonTemporalModel(freq, [0.004 2 1 1]);
         maxProbabilityMiss(i) = abs(sum(predictedProportions)) - 1;
        
 
         for j = 1:bins
             semilogx(freq,predictedProportions(j),'.','color',colorm(j,:));
+            labels{j} = strcat('cat',num2str(j));
         end
     end
+    labels{end+1} = 'watson curve';
+    watsonData = watsonTemporalModel(0:.1:64,[.004 2 1 1]);
+    watsonData = watsonData - min(watsonData);
+    if max(watsonData) ~= 0
+        watsonData = watsonData/max(watsonData);
+    end
+    hold on;
+    plot(0:.1:64,watsonData,'k.');
+    
+    hold on; legend(labels);
     max(maxProbabilityMiss)
 %}
 
