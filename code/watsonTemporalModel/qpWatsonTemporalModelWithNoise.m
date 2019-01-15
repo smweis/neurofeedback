@@ -1,44 +1,21 @@
-function predictedProportions = qpWatsonTemporalModel(frequency, params)
+function predictedProportions = qpWatsonTemporalModelWithNoise(frequency, params, sdNoise)
 % Express the returned value from the Watson model as amplitude proportions
 %
 % Syntax:
-%  predictedProportions = watsonToProportions(nCategories)
+%  predictedProportions = qpWatsonTemporalModelWithNoise(frequency, params, sdNoise)
 %
 % Description:
-%	Given a number of categories, the parameters of a Watson temporal model
+%	Given a frequency and the parameters of the Watson model, will return
+%	the predicted proportions of a number of categories (nCategories,
+%	default = 21). sdNoise is a noise parameter, corresponding to the
+%	standard deviation of the number of bins in freqSupport that the
+%	freqIdxInSupport can move. Essentially, we're shifting around the
+%	frequency index in the support vector. 
 %
 %
 % Examples:
 %{
-    figure; hold on;
-    i = 0;
-    labels = {};
-    %simParams = [-0.00251422630566837,1.00595645717933,3.79738894349084,0.951504640228191];
-    simParams = [.004 2 1 1];
-    bins = 21;
-    colorm = rand(bins,3);
-    for freq = 0:0.1:64
-        i = i + 1;
-        predictedProportions = qpWatsonTemporalModel(freq, simParams);
-        maxProbabilityMiss(i) = abs(sum(predictedProportions)) - 1;
-       
-
-        for j = 1:bins
-            semilogx(freq,predictedProportions(j),'.','color',colorm(j,:));
-            labels{j} = strcat('cat',num2str(j));
-        end
-    end
-    labels{end+1} = 'watson curve';
-    watsonData = watsonTemporalModel(0:.1:64,simParams);
-    watsonData = watsonData - min(watsonData);
-    if max(watsonData) ~= 0
-        watsonData = watsonData/max(watsonData);
-    end
-    hold on;
-    plot(0:.1:64,watsonData,'k.');
     
-    hold on; legend(labels);
-    max(maxProbabilityMiss)
 %}
 
 
@@ -58,7 +35,16 @@ predictedProportions = zeros(length(frequency),nCategories);
 
 for jj = 1:length(frequency)
     [~,freqIdxInSupport] = min(abs(freqSupport-frequency(jj)));
-
+    freqIdxInSupport = freqIdxInSupport + sdNoise*randn;
+    if freqIdxInSupport > 6401
+        freqIdxInSupport = 6401;
+    elseif freqIdxInSupport < 0
+        freqIdxInSupport = 1;
+    else
+        freqIdxInSupport = round(freqIdxInSupport);
+    end
+    
+    
 % Scale the Watson model to have unit amplitude
 %    y = y - min(y);
 %    if max(y) ~= 0
@@ -72,6 +58,7 @@ for jj = 1:length(frequency)
     for ii = 1:nCategories
     
         categoryCenter = (ii-1)*catBinSize + catBinSize/2;
+        
         distFromCatCenter = y(freqIdxInSupport) - categoryCenter;
         if ii == 1
             if distFromCatCenter < 0 

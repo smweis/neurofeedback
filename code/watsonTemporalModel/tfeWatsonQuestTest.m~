@@ -35,9 +35,9 @@ end
 % Create a set of parameter values that are derived from the Watson model
 % We first assign a random stimulus frequency to each stimulus instance
 freqSet = [2 4 8 16 32 64];
-freqInstances = freqSet(randi(length(freqSet),nInstances,1));
+%freqInstances = freqSet(randi(length(freqSet),nInstances,1));
 %freqInstances = [2,4,8,16,32,64,2,4,8,16,32,64,2,4,8,16,32,64,2,4,8,16,32];
-%freqInstances = [2 4 8 16 32 64 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4];
+freqInstances = [2 4 8 16 32 64 4 
 % Now obtain the BOLD fMRI %change amplitude response for each frequency
 % given a set of parameters for the Watson model
 
@@ -177,7 +177,7 @@ while latestPoint < length(testRoiSignal)
     stimNumber = ceil(length(sampleSignal)/12);
     stimNumberReal = stimNumber - floor(stimNumber/6) - 1;
     
-    %pctBOLDbins = changePctSignalBins(params.paramMainMatrix,21);
+    pctBOLDbins = changePctSignalBins(params.paramMainMatrix,21);
     
     questData = questDataCopy;
     

@@ -13,6 +13,7 @@ function predictedProportions = watsonToProportions(frequency, params,freqRange,
     figure; hold on;
     i = 0;
     bins = 5;
+    params = simParams
     colorm = rand(bins,3);
     for freq = 0:0.1:64
         i = i + 1;

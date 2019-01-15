@@ -1,40 +1,24 @@
-function predictedProportions = qpWatsonTemporalModel(frequency, params)
+function predictedProportions = qpWatsonTemporalModelWithNoise(frequency, params, sdNoise)
 % Express the returned value from the Watson model as amplitude proportions
 %
 % Syntax:
-%  predictedProportions = watsonToProportions(nCategories)
+%  predictedProportions = qpWatsonTemporalModelWithNoise(frequency, params, sdNoise)
 %
 % Description:
-%	Given a number of categories, the parameters of a Watson temporal model
+%	Given a frequency and the parameters of the Watson model, will return
+%	the predicted proportions of a number of categories (nCategories,
+%	default = 21). sdNoise is a noise parameter, corresponding to the
+%	standard deviati
 %
 %
 % Examples:
 %{
-    figure; hold on;
-    i = 0;
-    bins = 5;
-    colorm = rand(bins,3);
-    for freq = 0:0.1:64
-        i = i + 1;
-        predictedProportions = qpWatsonTemporalModel(freq, [0.004 2 1 1]);
-        maxProbabilityMiss(i) = abs(sum(predictedProportions)) - 1;
-       
-
-        for j = 1:bins
-            semilogx(freq,predictedProportions(j),'.','color',colorm(j,:));
-            
-        end
-    end
-    watsonData = watsonTemporalModel(0:.1:64,[.004 2 1 1]);
-    hold on;
-    plot(0:.1:64,watsonData);
-        hold on; legend('cat1','cat2','cat3','cat4','cat5');
-    max(maxProbabilityMiss)
+    
 %}
 
 
 freqRange=[0 64];
-nCategories=5;
+nCategories=21;
 
 % Obtain the Watson model for these params across the frequency range at a
 % high resolution
@@ -49,12 +33,23 @@ predictedProportions = zeros(length(frequency),nCategories);
 
 for jj = 1:length(frequency)
     [~,freqIdxInSupport] = min(abs(freqSupport-frequency(jj)));
-
-% Scale the Watson model to have unit amplitude
-    y = y - min(y);
-    if max(y) ~= 0
-        y = y ./ max(y);
+    freqIdxInSupport = freqIdxInSupport + sdNoise*randn;
+    if freqIdxInSupport > 6401
+        freqIdxInSupport = 6401;
+    elseif freqIdxInSupport < 0
+        freqIdxInSupport = 1;
+    else
+        freqIdxInSupport = round(freqIdxInSupport);
     end
+    
+    
+% Scale the Watson model to have unit amplitude
+%    y = y - min(y);
+%    if max(y) ~= 0
+%        y = y ./ max(y);
+%    end
+
+
 % Loop over the categories and report the proportion value for the
 % specified frequency in each amplitude category
     catBinSize = 1 / nCategories;
