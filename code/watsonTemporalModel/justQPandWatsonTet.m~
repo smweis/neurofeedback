@@ -1,8 +1,8 @@
 clear all;
 close all;
 
-stimParams = logspace(.1,2,100); % 100 logarithmically equally
-                                 % spaced points between 10^.1 and 10^2
+stimParams = logspace(.2,2,100); % x3 logarithmically equally
+                                 % spaced points between 10^x1 and 10^x2
                                  
                                  
 
@@ -11,33 +11,46 @@ questData = qpInitialize('stimParamsDomainList',{stimParams},...
 'qpPF',@qpWatsonTemporalModel,...
 'nOutcomes',21);
 
-
-outcomes = 1:21;
-
-
+questDataCopy = questData;
 %% Adjust these parameters and run the script. 
 watsonParams = [.004 2 1 1];
 
 nTrials = 24;
-sdNoise = 50; % Noise moves around the index for freqIdxInSupport (the x-axis, rather than the y-axis).
+sdNoise = 0; % Noise moves around the y-value from watsonTemporalModel.
 
 maxPost = zeros(nTrials,1);
 paramGuesses = zeros(nTrials,length(watsonParams));
 
-guessRange = 
+guessRange = watsonTemporalModel(stimParams,watsonParams);
+maxGuess = max(guessRange)+.1;
+minGuess = min(guessRange)-.1;
+
+guessBins = minGuess:(maxGuess-minGuess)/20:maxGuess;
+
 %% 
 for i = 1:nTrials
-    stim = qpQuery(questData);
+    stim(i) = qpQuery(questData);
     
-    yGuess = watsonTemporalModel(stim,watsonParams) + randn*sdNoise;
+    yGuess(i) = watsonTemporalModel(stim,watsonParams) + randn*sdNoise;
+    b = guessBins - yGuess(i);
+    b(b>0) = 0;
+    [~,idx] = max(b);
     
+    questData = questDataCopy;
     
-    outcome = outcomes(idx);
-    questData = qpUpdate(questData,stim,outcome);
+    for j = 1:i
+        
+        questData = qpUpdate(questData,stim(j),idx);
     
     [maxPost(i),maxIndex] = max(questData.posterior);
     paramGuesses(i,:) = questData.psiParamsDomain(maxIndex,:);
     
+
+    guessRange = watsonTemporalModel(stimParams,paramGuesses(i,:));
+    maxGuess = max(guessRange)+.1;
+    minGuess = min(guessRange)-.1;
+
+    guessBins = minGuess:(maxGuess-minGuess)/20:maxGuess;
 
 end
 
@@ -45,10 +58,19 @@ end
 
 freqSupport = 0:.01:64;
 
-figure; hold on;
-plot(freqSupport,watsonTemporalModel(freqSupport,watsonParams),'.k');
-for j = 1:size(paramGuesses,1)
-    a(j,:) = watsonTemporalModel((freqSupport),paramGuesses(j,:));
-    plot(freqSupport,a(j,:));
-end
+figure; 
+semilogx(watsonTemporalModel(freqSupport,watsonParams),'.k'); hold on;
+semilogx(watsonTemporalModel((freqSupport),paramGuesses(end,:)));
+%semilogx([questData.trialData.stim],watsonTemporalModel([questData.trialData.stim],watsonParams),'*r')
+%semilogx([questData.trialData.stim],yGuess,'*b')
 
+
+maxPost(end)
+
+figure; 
+for i = 1:length(questData.psiParamsDomain)
+    if mod(i,100)==0
+        semilogx(freqSupport,watsonTemporalModel(freqSupport,questData.psiParamsDomain(i,:)),'.r');
+        hold on;
+    end
+end
