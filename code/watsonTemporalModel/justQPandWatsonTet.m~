@@ -1,41 +1,54 @@
 clear all;
 close all;
 
-questData = qpInitialize('stimParamsDomainList',{[2 4 8 16 32 64]},...
+stimParams = logspace(.1,2,100); % 100 logarithmically equally
+                                 % spaced points between 10^.1 and 10^2
+                                 
+                                 
+
+questData = qpInitialize('stimParamsDomainList',{stimParams},...
 'psiParamsDomainList',{.001:.001:.012,.5:.5:2,.5:.5:5,.5:.5:3},...
 'qpPF',@qpWatsonTemporalModel,...
 'nOutcomes',21);
 
-simParams = [.004 1 1 2];
-%simParams = [-0.00251422630566837,1.00595645717933,3.79738894349084,0.951504640228191];
 
 outcomes = 1:21;
 
-for i = 1:128
+
+%% Adjust these parameters and run the script. 
+watsonParams = [.004 2 1 1];
+
+nTrials = 24;
+sdNoise = 50; % Noise moves around the index for freqIdxInSupport (the x-axis, rather than the y-axis).
+
+maxPost = zeros(nTrials,1);
+paramGuesses = zeros(nTrials,length(watsonParams));
+
+guessRange = 
+%% 
+for i = 1:nTrials
     stim = qpQuery(questData);
-    predictedProportions = qpWatsonTemporalModelWithNoise(stim,simParams,50000);
-    x = rand;
-    if x < max(predictedProportions)
-        [~,idx] = max(predictedProportions);
-    else
-        [~,idx] = maxk(predictedProportions,2);
-        idx = idx(2);
-    end
+    
+    yGuess = watsonTemporalModel(stim,watsonParams) + randn*sdNoise;
+    
+    
     outcome = outcomes(idx);
     questData = qpUpdate(questData,stim,outcome);
+    
+    [maxPost(i),maxIndex] = max(questData.posterior);
+    paramGuesses(i,:) = questData.psiParamsDomain(maxIndex,:);
+    
+
 end
-[~,maxIndex] = max(questData.posterior);
-paramGuesses = questData.psiParamsDomain(maxIndex,:);
+
+
 
 freqSupport = 0:.01:64;
+
 figure; hold on;
+plot(freqSupport,watsonTemporalModel(freqSupport,watsonParams),'.k');
 for j = 1:size(paramGuesses,1)
     a(j,:) = watsonTemporalModel((freqSupport),paramGuesses(j,:));
-    %b(j,:) = a(j,:) - min(a(j,:));
-    %if max(b(j,:)) ~= 0
-    %    b(j,:) = b(j,:)/max(b(j,:));
-    %end
     plot(freqSupport,a(j,:));
 end
-hold on;
-plot(freqSupport,watsonTemporalModel(freqSupport,simParams),'.k');
+

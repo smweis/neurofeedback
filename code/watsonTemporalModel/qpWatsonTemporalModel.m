@@ -45,6 +45,8 @@ function predictedProportions = qpWatsonTemporalModel(frequency, params)
 freqRange=[0 64];
 nCategories=21;
 
+smoothSize = 3;
+
 % Obtain the Watson model for these params across the frequency range at a
 % high resolution
 
@@ -90,10 +92,15 @@ for jj = 1:length(frequency)
         end
     
     end
+    
+    
+    predictedProportions(predictedProportions<0)=0;
+
+
+    predictedProportions(jj,:) = smoothdata(predictedProportions(jj,:),'gaussian',smoothSize);
+    predictedProportions(jj,:) = predictedProportions(jj,:)/sum(predictedProportions(jj,:));
 end
 
-
-predictedProportions(predictedProportions<0)=0;
 
 end
 
