@@ -1,8 +1,8 @@
-function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
+function y = watsonTemporalModel4Param(frequenciesHz, params)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
-%  y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
+%  y = watsonTemporalModel(frequenciesHz, params)
 %
 % Description:
 %	Calculates the two-component (center-surround) Watson temporal model
@@ -35,12 +35,6 @@ function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
 %   empirically. Center and surround orders of "9" and "10" are presented
 %   in (e.g.) Figure 6.5 of Watson (1986).
 %
-%   The centerAmplitude parameter input to the model is optional. If
-%   provided, the model will use this value in the calculation. If not
-%   provided, the routine will determine a value for the centerAmplitude
-%   that causes the output of the model to have a maximum value of unity
-%   across a hard-coded range of plausible frequency inputs.
-%
 %   Note that the model can only return positive amplitudes of response,
 %   although some empirical data may have a negative amplitude (e.g., BOLD
 %   fMRI data of a low temporal frequency stimulus as compared to a blank
@@ -51,94 +45,53 @@ function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
 %   frequenciesHz         - 1xn vector that provides the stimulus
 %                           frequencies for which the model will be
 %                           evaluated
-%   params                - 1x3 vector of model parameters:
+%   params                - 1x4 vector of model parameters:
 %                             tau - time constant of the center filter (in
 %                                   seconds)
 %                           kappa - multiplier of the time-constant for the
 %                                   surround
+%                 centerAmplitude - amplitude of the center filter
 %                            zeta - multiplier that scales the amplitude of
 %                                   the surround filter
-%   params_centerAmplitude - Scalar. Optional. The fourth parameter of the
-%                           model 
 %
 % Outputs:
 %   y                     - 1xn vector of modeled amplitude values.
 %
 % Examples:
 %{
-    % Demonstrate basic output of the model
-    freqHz = logspace(0,log10(64),100);
-    params = [0.01 2 1];
-    semilogx(freqHz,watsonTemporalModel(freqHz,params),'-k');    
-%}
-%{
-    % Fit the Watson model to some empirical data
     stimulusFreqHz = [0.5 1 2 4 8 16 32 64];
-    pctBOLDresponse = [-0.1050   -0.0380    0.1270    0.1800    0.2970    0.5110    0.4700   -0.1020];
-    % Adjust the BOLD response to deal with negative values
-    minBOLD = min(pctBOLDresponse)
-    if minBOLD < 0
-        x = pctBOLDresponse - minBOLD
-    else
-        x = pctBOLDresponse;
-        minBOLD = 0;
-    end
-    % Find the maximum interpolated BOLD response
-    stimulusFreqHzFine = logspace(0,log10(64),100);
-    splineInterpolatedMax = max(spline(stimulusFreqHz,x,stimulusFreqHzFine));
-    % Scale the x vector so that the max is zero
-    x = x ./ splineInterpolatedMax;
-    myObj = @(p) sqrt(sum((scaledBOLDresponse-watsonTemporalModel(stimulusFreqHz,p)).^2));
-    x0 = [0.004 2 1];
+    pctBOLDresponse = [0.095 0.162 0.327 0.38 0.497 0.711 0.67 0.098];;
+    myObj = @(p) sqrt(sum((pctBOLDresponse-watsonTemporalModel4Param(stimulusFreqHz,p)).^2));
+    x0 = [0.004 2 1 1];
     params = fmincon(myObj,x0,[],[]);
-    semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,params).*splineInterpolatedMax+minBOLD,'-k');
+    stimulusFreqHzFine = stimulusFreqHz(1):0.1:stimulusFreqHz(end);
+    semilogx(stimulusFreqHzFine,watsonTemporalModel4Param(stimulusFreqHzFine,params),'-k');
     hold on
     semilogx(stimulusFreqHz, pctBOLDresponse, '*r');
-    hold off
 %}
 
 % Fixed parameters (taken from Figure 6.4 and 6.5 of Watson 1986)
 centerFilterOrder = 9; % Order of the center (usually fast) filter
 surroundFilterOrder = 10; % Order of the surround (usually slow) filter
 
-% Define a frequency domain in Hz over which the model is defined. The
-% maximum and minimum value of the y response should be contained within
-% this range for any plausible set of parameters. We hard code a log-spaced
-% range of 0.1 - 200 Hz here.
-freqDomain = logspace(-1,log10(200),100);
-
-% Sanity check the frequency input
-if max(frequenciesHz)>max(freqDomain) || min(frequenciesHz)<min(freqDomain)
-    error('The passed frequency is out of range for the model');
-end
-
 % Un-pack the passed parameters
 params_tau = params(1);
 params_kappa = params(2);
-params_zeta = params(3);
+params_centerAmplitude = params(3);
+params_zeta = params(4);
 
-% Calculte the response. If a centerAmplitude was passed, perform the
-% computation
-if nargin == 3
-    H1 = nStageLowPassFilter(params_tau,frequenciesHz,centerFilterOrder);
-    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz,surroundFilterOrder);
-    y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
-else
-    % Search to find the center amplitude that provides a maximum response
-    % of unity, then perform the computation. This is a recursive call to
-    % this function.
-    myObj = @(x) abs(max(watsonTemporalModel(freqDomain, params, x))-1);
-    params_centerAmplitude = fminsearch(myObj,1);
-    H1 = nStageLowPassFilter(params_tau,frequenciesHz,centerFilterOrder);
-    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz,surroundFilterOrder);
-    y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
-end
+% Generate the model. We return y for each stimulus.
+
+H1 = nStageLowPassFilter(params_tau,frequenciesHz,centerFilterOrder);
+H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz,surroundFilterOrder);
+y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
 
 % The model calculates a vector of complex values that define the Fourier
 % transform of the system output. As we are implementing a model of just
 % the amplitude component of a temporal transfer function, the absolute
 % value of the model output is returned.
 y = abs(y);
+
 
 
 
