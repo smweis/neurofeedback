@@ -78,16 +78,16 @@ function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
     % Adjust the BOLD response to deal with negative values
     minBOLD = min(pctBOLDresponse)
     if minBOLD < 0
-        x = pctBOLDresponse - minBOLD
+        scaledBOLDresponse = pctBOLDresponse - minBOLD
     else
-        x = pctBOLDresponse;
+        scaledBOLDresponse = pctBOLDresponse;
         minBOLD = 0;
     end
     % Find the maximum interpolated BOLD response
     stimulusFreqHzFine = logspace(0,log10(64),100);
-    splineInterpolatedMax = max(spline(stimulusFreqHz,x,stimulusFreqHzFine));
+    splineInterpolatedMax = max(spline(stimulusFreqHz,scaledBOLDresponse,stimulusFreqHzFine));
     % Scale the x vector so that the max is zero
-    x = x ./ splineInterpolatedMax;
+    scaledBOLDresponse = scaledBOLDresponse ./ splineInterpolatedMax;
     myObj = @(p) sqrt(sum((scaledBOLDresponse-watsonTemporalModel(stimulusFreqHz,p)).^2));
     x0 = [0.004 2 1];
     params = fmincon(myObj,x0,[],[]);
