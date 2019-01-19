@@ -42,7 +42,7 @@ function predictedProportions = qpWatsonTemporalModel(frequency, params)
 %}
 
 
-freqRange=[0 64];
+freqRange=[.11 64];
 nCategories=21;
 
 smoothSize = 10;
