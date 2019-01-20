@@ -45,7 +45,7 @@ function predictedProportions = qpWatsonTemporalModel(frequency, params)
 freqRange = [.11 64];
 nCategories = 21;
 
-smoothSize = 12;
+smoothSize = params(4);
 
 % Obtain the Watson model for these params across the frequency range at a
 % high resolution
@@ -53,7 +53,7 @@ smoothSize = 12;
 %defaults
 
 freqSupport = freqRange(1):0.01:freqRange(2);
-y = watsonTemporalModel(freqSupport, params);
+y = watsonTemporalModel(freqSupport, params(1:3));
 
 % Where is the passed frequency value in frequence support
 predictedProportions = zeros(length(frequency),nCategories);

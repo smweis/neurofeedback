@@ -36,7 +36,7 @@ nTrials = 128;
 % noise" at the moment, in the sense that the SD is the same across all
 % possible frequencies. 
 % I've tried from between 0 and .3. 
-sdNoise = 0.05; 
+sdNoise = 0.4; 
 
 %% Initialize a few things.
  
