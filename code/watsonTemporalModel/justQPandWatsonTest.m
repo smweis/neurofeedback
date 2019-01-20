@@ -7,10 +7,10 @@ close all
 simulatedPsiParams = [];
 
 % This is a low-pass TTF in noisy fMRI data
-% simulatedPsiParams = [10 1 0.83 1];
+%simulatedPsiParams = [10 1 0.83 1];
 
 % This is a band-pass TTF in noisy fMRI data
-simulatedPsiParams = [1.47 1.75 0.83 1];
+%simulatedPsiParams = [1.47 1.75 0.83 1];
 
 % How talkative is the simulation
 showPlots = true;
@@ -27,11 +27,15 @@ nStims = 24;
 myQpParams.stimParamsDomainList = {logspace(log10(2),log10(64),nStims)};
 
 % The number of outcome categories.
-myQpParams.nOutcomes = 21;
+myQpParams.nOutcomes = 25;
+
+% The headroom is the proportion of outcomes that are reserved above and
+% below the min and max output of the Watson model to account for noise
+headroom = [0.1 0.1];
 
 % Create an anonymous function from qpWatsonTemporalModel in which we
 % specify the number of outcomes for the y-axis response
-myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes);
+myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom);
 
 % Define the parameter ranges
 tau = 0.5:0.5:10;	% time constant of the center filter (in msecs)
@@ -73,17 +77,24 @@ end
 
 % Create a plot in which we can track the model progress
 if showPlots
+    % Set up the TTF figure
     figure
     subplot(2,1,1)
     freqDomain = logspace(0,log10(100),100);
     semilogx(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-1)),'-k');
-    ylim([0 1.5]);
+    ylim([-0.5 1.5]);
     xlabel('log stimulus Frequency [Hz]');
     ylabel('Relative response amplitude');
     title('Estimate of Watson TTF');
     hold on
     currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-1)),'-k');
 
+    % Calculate the lower headroom bin offset. We'll use this later
+    nLower = round(headroom(1)*myQpParams.nOutcomes);
+    nUpper = round(headroom(1)*myQpParams.nOutcomes);
+    nMid = myQpParams.nOutcomes - nLower - nUpper;
+    
+    % Set up the entropy x trial figure
     subplot(2,1,2)
     entropyAfterTrial = nan(1,nTrials);
     currentEntropyHandle = plot(1:nTrials,entropyAfterTrial,'*k');
@@ -107,7 +118,9 @@ for tt = 1:nTrials
     
     % Update the plot
     if showPlots
-        yOutcome = (outcome/myQpParams.nOutcomes)-(1/myQpParams.nOutcomes)/2;
+        
+        % Current guess at the TTF, along with stims and outcomes
+        yOutcome = ((outcome-nLower)/nMid)-(1/myQpParams.nOutcomes)/2;
         subplot(2,1,1)
         scatter(stim,yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
