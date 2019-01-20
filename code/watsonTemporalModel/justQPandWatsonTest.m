@@ -1,159 +1,97 @@
-clear all;
-close all;
+clearvars
+close all
 
-%% Set up Q+. 
+showPlots = true;
+verbose = true;
+nTrials = 64;
 
-numStims = 20; % This parameter matters a lot for how Q+ calculates things.
+%% Set up Q+.
 
-stimParams = logspace(-.9,2,numStims); % x3 logarithmically equally
-                                 % spaced points between 10^x1 and 10^x2                                 
-%stimParams = [2 4 8 16 32 64];                                 
+% Get the default Q+ params
+myQpParams = qpParams;
 
+% Add the stimulus domain. Log spaced frequencies between 2 and 64 Hz
+nStims = 24; 
+myQpParams.stimParamsDomainList = {logspace(log10(2),log10(64),nStims)};
 
-% The number of categories. DO NOT CHANGE THIS VALUE without also changing 
-% qpWatsonTemporalModel. Right now, it is not a parameter that Q+ will
-% search for, though it could be. 
-nCategories = 21;
+% The number of outcome categories.
+myQpParams.nOutcomes = 21;
 
+% Create an anonymous function from qpWatsonTemporalModel in which we
+% specify the number of outcomes for the y-axis response
+myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes);
 
-% Initialize Q+ 
-questData = qpInitialize('stimParamsDomainList',{stimParams},...
-'psiParamsDomainList',{.001:.002:.013,.5:.5:2,.5:.5:5},...
-'qpPF',@qpWatsonTemporalModel,...
-'nOutcomes',nCategories);
+% Define the parameter ranges
+tau = 0.5:0.5:5;	% time constant of the center filter (in msecs)
+kappa = 0.5:0.25:3;	% multiplier of the time-constant for the surround
+zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
+sigma = 0:0.25:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 
- 
-%% Adjust these parameters and run the script. 
+myQpParams.psiParamsDomainList = {tau, kappa, zeta, sigma};
 
-% These are the simulated Watson parameters. The "right answer."
-watsonParams = [.009 2 1];
+% Define the veridical model params
+simulatedPsiParams = [2.25 2.025 0.83 0.65];
 
+% Create a simulated observer
+myQpParams.qpOutcomeF = @(f) qpSimulatedObserver(f,myQpParams.qpPF,simulatedPsiParams);
 
-% Number of trials to iterate through. 
-nTrials = 128;
+% Warn the user that we are initializing
+if verbose
+    tic
+    fprintf('Initializing Q+. This may take a minute...');
+end
 
-% Noise moves around the y-value from watsonTemporalModel. It's "dumb
-% noise" at the moment, in the sense that the SD is the same across all
-% possible frequencies. 
-% I've tried from between 0 and .3. 
-sdNoise = 0.05; 
+% Initialize Q+
+questData = qpInitialize(myQpParams);
 
-%% Initialize a few things.
- 
-maxPost = zeros(nTrials,1); % the max posterior prob value in Q+
-paramGuesses = zeros(nTrials,length(watsonParams)); % the current Watson parameters that are assigned that value.
+if verbose
+    toc
+end
 
-% Setting the guess range based on max and min from the watsonTemporalModel
-% for the given parameters. (Though, watsonTemporalModel currently just
-% ranges from +1 to -1. So this step may be unnecessary. 
-guessRange = watsonTemporalModel(stimParams,watsonParams);
-maxGuess = max(guessRange);
-minGuess = min(guessRange);
+% Create a plot in which we can track the model progress
+if showPlots
+    figure
+    freqDomain = logspace(0,log10(100),100);
+    semilogx(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-1)),'-k');
+    ylim([0 1.5]);
+    hold on
+end
 
-guessBins = minGuess:(maxGuess-minGuess)/(nCategories-1):maxGuess;
+%% Run simulated trials
+for tt = 1:nTrials
 
-%% The main Q+ loop. 
-for i = 1:nTrials
+    % Get stimulus for this trial
+    stim = qpQuery(questData);
     
-    % Get a stim from Q+ 
-    stim(i) = qpQuery(questData);
+    % Simulate outcome
+    outcome = myQpParams.qpOutcomeF(stim);
     
-    % Add noise to the watsonTemporalModel value, based on the simulated
-    % parameters and the amount of noise.
-    yGuess(i) = watsonTemporalModel(stim(i),watsonParams) + randn*sdNoise;
-
-    % Assign the noisy y-value to a bin. 
-    b = guessBins - yGuess(i);
-    b(b>0) = 0;
-    [~,outcome(i)] = max(b);
+    % Update quest data structure
+    questData = qpUpdate(questData,stim,outcome); 
     
-    % update Q+
-    questData = qpUpdate(questData,stim(i),outcome(i));
-   
-%{
-    The following is commented out because there is no need to update the
-    bins based on the output from watsonTemporalModel for each iteration and 
-    to rerun Q+ with the new bins. 
-    
-    
-    questData = questDataCopy;
-    
-
-    for j = 1:i
-        b = guessBins - yGuess(j);
-        b(b>0) = 0;
-        [~,outcome(j,i)] = max(b);
-        questData = qpUpdate(questData,stim(j),outcome(j,i));
+    % Update the plot
+    if showPlots
+        yOutcome = (outcome/myQpParams.nOutcomes)-(1/myQpParams.nOutcomes)/2;
+        scatter(stim,yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
+        psiParamsIndex = qpListMaxArg(questData.posterior);
+        psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
+        if tt>1
+            delete(currentFuncHandle)
+        end
+        currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest(1:end-1)),'-r');
+        drawnow
+        % pause
     end
-    
-    if maxPost(i) > .01
-        guessRange = watsonTemporalModel(stimParams,paramGuesses(i,:));
-        maxGuess = max(guessRange);
-        minGuess = min(guessRange);
-        guessBins = minGuess:(maxGuess-minGuess)/20:maxGuess;
-    end
-    
-%}    
-    
-    % Update the maximum posterior and get the latest parameter estimates.
-    [maxPost(i),maxIndex] = max(questData.posterior);
-    paramGuesses(i,:) = questData.psiParamsDomain(maxIndex,:);
-    
-    
-    
-
     
 end
 
-
-
-freqSupport = .11:.01:64;
-
-
-%% Plots
-
-% Plot the watsonTemporalModel from the simulated parameters and from the
-% best guess parameters. 
-figure;
-semilogx([questData.trialData.stim],watsonTemporalModel([questData.trialData.stim],watsonParams),'*r'); hold on;
-semilogx([questData.trialData.stim],yGuess,'*b'); hold on;
-semilogx(freqSupport,watsonTemporalModel(freqSupport,watsonParams),'.r');
-hold on;
-semilogx(freqSupport,watsonTemporalModel(freqSupport,paramGuesses(i,:)),'.b');
-
-
-
-% Very klugey code that attempts to recreate Figure 15 from Watson's 2017
-% q+ paper with multiple categories. 
-
-% The line plots are the predicted probabilities for each of the
-% nCategories, as calcaulted by qpWatsonTemporalModel. 
-
-% The dots are the actual stimulus frequencies and the proportion of each
-% outcome (colors) for that stimulus frequency. 
-
-% The size of the dots corresponds to the number of trials at that
-% probability. 
-colors = repmat([0 0 0; 1 0 0; 0 1 0; .5 .5 .5; 1 0 1; 0 1 1; 0 0 1],3,1);
-
-outOfStruct = [questData.trialData.stim; questData.trialData.outcome];
-sortedStims = sort(outOfStruct');
-crossTab = crosstab(sortedStims(:,1),sortedStims(:,2));
-uniqueStims = unique(sortedStims(:,1));
-uniqueOutcomes = unique(sortedStims(:,2));
-
-
-freqProbs = qpWatsonTemporalModel(freqSupport,paramGuesses(end,:));
-figure;
-for i = 1:size(freqProbs,2)
-    semilogx(freqSupport,freqProbs(:,i),'Color',colors(i,:),'LineWidth',3); hold on;
-end
-
-for i = 1:length(uniqueStims)
-    props(i,:) = crossTab(i,:)/sum(crossTab(i,:));
-    for j = 1:length(uniqueOutcomes)
-        semilogx(uniqueStims(i),props(i,j),'.','Color',colors(uniqueOutcomes(j),:),'MarkerSize',sum(crossTab(i,:))); hold on;
-    end
-end
+%% Find out QUEST+'s estimate of the stimulus parameters, obtained
+% on the gridded parameter domain.
+psiParamsIndex = qpListMaxArg(questData.posterior);
+psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
+fprintf('Simulated parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+    simulatedPsiParams(1),simulatedPsiParams(2),simulatedPsiParams(3),simulatedPsiParams(4));
+fprintf('Max posterior QUEST+ parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+    psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4));
 
 
