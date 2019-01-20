@@ -3,11 +3,14 @@ close all
 
 % Define the veridical model params
 
-% This is a band-pass TTF in noisy fMRI data
-%simulatedPsiParams = [2.25 2.025 0.83 0.65];
+% Leave the simulatedPsiParams empty to try a random set of params
+simulatedPsiParams = [];
 
 % This is a low-pass TTF in noisy fMRI data
-simulatedPsiParams = [10 1 0.83 0.6];
+% simulatedPsiParams = [10 1 0.83 1];
+
+% This is a band-pass TTF in noisy fMRI data
+simulatedPsiParams = [1.47 1.75 0.83 1];
 
 % How talkative is the simulation
 showPlots = true;
@@ -37,6 +40,12 @@ zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
 sigma = 0:0.25:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, sigma};
 
+% Pick some random params to simulate if none provided (but insist on some
+% noise)
+if isempty(simulatedPsiParams)
+    simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) 1];
+end
+
 % Derive some lower and upper bounds from the parameter ranges. This is
 % used later in maximum likelihood fitting
 lowerBounds = [tau(1) kappa(1) zeta(1) sigma(1)];
@@ -54,6 +63,7 @@ end
 % Initialize Q+
 questData = qpInitialize(myQpParams);
 
+% Warn the user we are about to start
 if verbose
     toc
     fprintf('Press space to start.\n');
