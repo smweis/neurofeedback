@@ -1,23 +1,27 @@
+%% demonstration of QP applied to Watson TTF fit to BOLD fMRI data
+
+% Clean up
 clearvars
 close all
 
-% Define the veridical model params
 
-% Leave the simulatedPsiParams empty to try a random set of params
+%% Define the veridical model params
+
+% Leave the simulatedPsiParams empty to try a random set of params.
+% Here are some params to try for specific TTF shapes:
+%	A low-pass TTF in noisy fMRI data: [10 1 0.83 1]
+%   A band-pass TTF in noisy fMRI data: [1.47 1.75 0.83 1]
 simulatedPsiParams = [];
 
-% This is a low-pass TTF in noisy fMRI data
-%simulatedPsiParams = [10 1 0.83 1];
+% How many trials to run?
+nTrials = 512;
 
-% This is a band-pass TTF in noisy fMRI data
-%simulatedPsiParams = [1.47 1.75 0.83 1];
-
-% How talkative is the simulation
+% How talkative is the simulation?
 showPlots = true;
 verbose = true;
-nTrials = 128;
 
-%% Set up Q+.
+
+%% Set up Q+
 
 % Get the default Q+ params
 myQpParams = qpParams;
@@ -27,16 +31,15 @@ nStims = 24;
 myQpParams.stimParamsDomainList = {logspace(log10(2),log10(64),nStims)};
 
 % The number of outcome categories.
-myQpParams.nOutcomes = 25;
+myQpParams.nOutcomes = 31;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
-headroom = [0.1 0.1];
+headroom = [0.2 0.2];
 
 % Create an anonymous function from qpWatsonTemporalModel in which we
 % specify the number of outcomes for the y-axis response
 myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom);
-
 
 % Define the parameter ranges
 tau = 0.5:0.5:10;	% time constant of the center filter (in msecs)
@@ -68,7 +71,7 @@ end
 % Initialize Q+
 questData = qpInitialize(myQpParams);
 
-% Warn the user we are about to start
+% Prompt the user we to start the simulation
 if verbose
     toc
     fprintf('Press space to start.\n');
@@ -144,6 +147,7 @@ for tt = 1:nTrials
     
 end
 
+% Done with the simulation
 if verbose
     fprintf('\n');
 end
@@ -158,7 +162,7 @@ fprintf('Simulated parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
 fprintf('Max posterior QUEST+ parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
     psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4));
 
-%% Find aximum likelihood fit.  Use psiParams from QUEST+ as the starting
+%% Find maximum likelihood fit. Use psiParams from QUEST+ as the starting
 % parameter for the search, and impose as parameter bounds the range
 % provided to QUEST+.
 psiParamsFit = qpFit(questData.trialData,questData.qpPF,psiParamsQuest,questData.nOutcomes,...
