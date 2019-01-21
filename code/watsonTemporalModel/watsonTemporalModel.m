@@ -1,4 +1,4 @@
-function y = watsonTemporalModel(frequenciesToModel, params, params_centerAmplitude)
+function y = watsonTemporalModel(frequenciesToModel, params, params_centerAmplitudeIn, filterOrder)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
@@ -58,7 +58,10 @@ function y = watsonTemporalModel(frequenciesToModel, params, params_centerAmplit
 %                            zeta - multiplier of the surround amplitude
 %                                   the surround filter
 %   params_centerAmplitude - Scalar. Optional. The fourth parameter of the
-%                           model 
+%                           model.
+%   filterOrder           - 1x2 vector. Optional provides the order of the
+%                           center and surround filters respetively. If not
+%                           provided, defaults to [9 10]
 %
 % Outputs:
 %   y                     - 1xn vector of modeled amplitude values.
@@ -68,7 +71,8 @@ function y = watsonTemporalModel(frequenciesToModel, params, params_centerAmplit
     % Demonstrate basic output of the model
     freqHz = logspace(0,log10(64),100);
     params = [2 2 1];
-    semilogx(freqHz,watsonTemporalModel(freqHz,params),'-k');    
+    y = watsonTemporalModel(freqHz,params);
+    semilogx(freqHz,y,'-k');    
 %}
 %{
     % Fit the Watson model to some empirical data
@@ -96,9 +100,22 @@ function y = watsonTemporalModel(frequenciesToModel, params, params_centerAmplit
     hold off
 %}
 
-% Fixed parameters (taken from Figure 6.4 and 6.5 of Watson 1986)
-centerFilterOrder = 9; % Order of the center (usually fast) filter
-surroundFilterOrder = 10; % Order of the surround (usually slow) filter
+% Handle optional parameters
+if nargin >=3
+    params_centerAmplitude = params_centerAmplitudeIn;
+else
+    params_centerAmplitude = [];
+end
+
+if nargin >=4
+    centerFilterOrder = filterOrder(1); % Order of the center (usually fast) filter
+    surroundFilterOrder = filterOrder(2); % Order of the surround (usually slow) filter
+else
+    % Fixed parameters (taken from Figure 6.4 and 6.5 of Watson 1986)
+    centerFilterOrder = 9; % Order of the center (usually fast) filter
+    surroundFilterOrder = 10; % Order of the surround (usually slow) filter
+end
+
 
 % Define a frequency domain in Hz over which the model is defined. The
 % maximum and minimum value of the y response should be contained within
@@ -118,19 +135,19 @@ params_zeta = params(3);
 
 % Calculte the response. If a centerAmplitude was passed, perform the
 % computation
-if nargin == 3
+if ~isempty(params_centerAmplitude)
     H1 = nStageLowPassFilter(params_tau,frequenciesToModel,centerFilterOrder);
     H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesToModel,surroundFilterOrder);
-    y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
+    y = (params_centerAmplitudeIn * H1) - (params_zeta*params_centerAmplitudeIn*H2);
 else
     % Search to find the center amplitude that provides a maximum response
     % of unity, then perform the computation. This is a recursive call to
     % this function.
-    myObj = @(x) abs(max(watsonTemporalModel(freqDomain, params, x))-1);
-    params_centerAmplitude = fminsearch(myObj,1);
+    myObj = @(x) abs(max(watsonTemporalModel(freqDomain, params, x, [centerFilterOrder surroundFilterOrder]))-1);
+    params_centerAmplitudeIn = fminsearch(myObj,1);
     H1 = nStageLowPassFilter(params_tau,frequenciesToModel,centerFilterOrder);
     H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesToModel,surroundFilterOrder);
-    y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
+    y = (params_centerAmplitudeIn * H1) - (params_zeta*params_centerAmplitudeIn*H2);
 end
 
 % The model calculates a vector of complex values that define the Fourier
@@ -139,7 +156,7 @@ end
 % value of the model output is returned.
 y = abs(y);
 
-
+end % main function
 
 
 function Hsub = nStageLowPassFilter(tau,frequenciesHz,filterOrder)
@@ -156,7 +173,5 @@ function Hsub = nStageLowPassFilter(tau,frequenciesHz,filterOrder)
 % filterOrder -- the number of low-pass filters which are cascaded in
 %                the model
 Hsub = (1i*2*pi*frequenciesHz*tau + 1) .^ (-filterOrder);
-
-end
 
 end
