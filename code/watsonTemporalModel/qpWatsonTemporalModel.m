@@ -5,15 +5,14 @@ function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params
 %  predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params, nCategoriesIn, headroomIn)
 %
 % Description:
-%	This function maps the 0-1 amplitude of the Watson TTF response into a
-%	discrete response within one of nCategory bins into which the 0-1
-%	response range has been divided. The shape of the Watson TTF is
-%	determined by the first three elements of the params variable. The
-%	fourth element of params is the degree of Gaussian smoothing to be
+%	This function maps the 0-1 amplitude of the Watson TTF response to a
+%	discrete response within one of nCategory bins. The shape of the Watson
+%	TTF is determined by the first three elements of the params variable.
+%	The fourth element of params is the degree of Gaussian smoothing to be
 %	applied to the response categories across the y-axis. The units of this
-%	sigma value are the 0-1 range of the response. So, a sigma of 0.25
-%	indicates a Gaussian kernel that has a SD equal to 1/4 of the 0-1
-%	respond range.
+%	sigma value are nCategory bins of the response. So, a sigma of 0.25
+%	indicates a Gaussian kernel that has a SD equal to 1/4 of the respond
+%	range.
 %
 % Inputs:
 %   frequenciesToModel    - nx1 column vector of frequencies (in Hz) for 
@@ -31,14 +30,14 @@ function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params
 %                           of the nCategories to reserve above and below
 %                           the minimum and maximum output of the Watson
 %                           model. Defaults to [0.1 0.1], which means that
-%                           10% of the nCategories range will correspond to
+%                           20% of the nCategories range will correspond to
 %                           response values that are less than zero or
 %                           greater than 1.
 % Outputs:
-%   predictedProportions  - An n x nCategories matrix that provides for
-%                           each of the frequencies to model the
-%                           probability that a measured response will fall
-%                           in a given amplitude bin.
+%   predictedProportions  - An nFrequencies x nCategories matrix that
+%                           provides for each of the frequencies to model
+%                           the probability that a measured response will
+%                           fall in a given amplitude bin.
 %
 % Examples:
 %{
@@ -140,8 +139,8 @@ for ii = 1:length(frequenciesToModel)
     % frequency is unity
     predictedProportions(ii,:) = predictedProportions(ii,:)/sum(predictedProportions(ii,:));
     
-end
+end % loop over frequencies to model
 
 
-end
+end % main function
 
