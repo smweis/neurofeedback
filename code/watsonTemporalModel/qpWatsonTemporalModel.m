@@ -1,104 +1,145 @@
-function predictedProportions = qpWatsonTemporalModel(frequency, params)
-% Express the returned value from the Watson model as amplitude proportions
+function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params, nCategoriesIn, headroomIn)
+% Express the Watson model TTF as amplitude proportions
 %
 % Syntax:
-%  predictedProportions = watsonToProportions(nCategories)
+%  predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params, nCategoriesIn, headroomIn)
 %
 % Description:
-%	Given a number of categories, the parameters of a Watson temporal model
+%	This function maps the 0-1 amplitude of the Watson TTF response into a
+%	discrete response within one of nCategory bins into which the 0-1
+%	response range has been divided. The shape of the Watson TTF is
+%	determined by the first three elements of the params variable. The
+%	fourth element of params is the degree of Gaussian smoothing to be
+%	applied to the response categories across the y-axis. The units of this
+%	sigma value are the 0-1 range of the response. So, a sigma of 0.25
+%	indicates a Gaussian kernel that has a SD equal to 1/4 of the 0-1
+%	respond range.
 %
+% Inputs:
+%   frequenciesToModel    - nx1 column vector of frequencies (in Hz) for 
+%                           which the Watson TTF will be evaluated and 
+%                           predicted proportions returned
+%   params                - 1x4 vector. The first three values correspond
+%                           to the three parameters of watsonTemporalModel.
+%                           The last parameter is the sigma of the Gaussian
+%                           smoothing to apply across the category
+%                           boundaries.
+%   nCategoriesIn         - Scalar. Optional. Sets the number of bins into
+%                           which the y-axis will be divided. Defaults to
+%                           21 if not provided.
+%   headroomIn            - 1x2 vector. Optional. Determines the proportion
+%                           of the nCategories to reserve above and below
+%                           the minimum and maximum output of the Watson
+%                           model. Defaults to [0.1 0.1], which means that
+%                           10% of the nCategories range will correspond to
+%                           response values that are less than zero or
+%                           greater than 1.
+% Outputs:
+%   predictedProportions  - An n x nCategories matrix that provides for
+%                           each of the frequencies to model the
+%                           probability that a measured response will fall
+%                           in a given amplitude bin.
 %
 % Examples:
 %{
-    figure; hold on;
-    i = 0;
-    labels = {};
-    %simParams = [-0.00251422630566837,1.00595645717933,3.79738894349084,0.951504640228191];
-    simParams = [.004 2 1 1];
-    bins = 21;
-    colorm = rand(bins,3);
-    for freq = 0:0.1:64
-        i = i + 1;
-        predictedProportions = qpWatsonTemporalModel(freq, simParams);
-        maxProbabilityMiss(i) = abs(sum(predictedProportions)) - 1;
-       
+    % Demonstrate the conversion of a single modeled frequency into a
+    % predicted proportion vector under the control of smoothing noise
+    % Parameters of the Watson model
+    tau = 1;	% time constant of the center filter (in msecs)
+    kappa = 1.5;	% multiplier of the time-constant for the surround
+	zeta = 1;	% multiplier that scales the amplitude of the surround
 
-        for j = 1:bins
-            semilogx(freq,predictedProportions(j),'.','color',colorm(j,:));
-            labels{j} = strcat('cat',num2str(j));
-        end
-    end
-    labels{end+1} = 'watson curve';
-    watsonData = watsonTemporalModel(0:.1:64,simParams);
-    watsonData = watsonData - min(watsonData);
-    if max(watsonData) ~= 0
-        watsonData = watsonData/max(watsonData);
-    end
-    hold on;
-    plot(0:.1:64,watsonData,'k.');
-    
-    hold on; legend(labels);
-    max(maxProbabilityMiss)
+    % Plot the Watson TTF
+    freqDomain = logspace(0,log10(100),100);
+    figure
+    subplot(2,1,1);
+    semilogx(freqDomain,watsonTemporalModel(freqDomain,[tau kappa zeta]));
+    xlabel('log Freq [Hz]');
+    ylabel('Amplitude TTF [0-1]');
+    title('Watson TTF');
+    hold on
+
+    % The frequency at which to obtain the predicted proportions
+    freqHz = 40;
+
+    % Indicate on the Watson TTF plot the frequency to model
+    semilogx(freqHz,watsonTemporalModel(freqHz,[tau kappa zeta]),'*r');
+
+    % Gaussian noise to be applied across the y-axis response categories
+    sigma = 0.5;
+
+    % Assemble the params with the noise modeled
+    params = [tau kappa zeta sigma];
+
+    % The number of bins into which to divide the response amplitude
+    nCategories = 21;
+
+    % Perform the calculation
+    predictedProportions = qpWatsonTemporalModel(freqHz, params, nCategories);
+
+    % Plot the predicted proportions
+    subplot(2,1,2);
+    plot(predictedProportions,1:nCategories,'*k')
+    xlim([0 1]);
+    ylim([1 nCategories]);
+    xlabel('predicted proportion [0-1]');
+    ylabel('Amplitude response bin');
+    title('Predicted proportions');
 %}
 
-
-freqRange = [.11 64];
-nCategories = 21;
-
-smoothSize = params(4);
-
-% Obtain the Watson model for these params across the frequency range at a
-% high resolution
-
-%defaults
-
-freqSupport = freqRange(1):0.01:freqRange(2);
-y = watsonTemporalModel(freqSupport, params(1:3));
-
-% Where is the passed frequency value in frequence support
-predictedProportions = zeros(length(frequency),nCategories);
-
-for jj = 1:length(frequency)
-    [~,freqIdxInSupport] = min(abs(freqSupport-frequency(jj)));
-
-% Scale the Watson model to have unit amplitude
-%    y = y - min(y);
-%    if max(y) ~= 0
-%        y = y ./ max(y);
-%    end
+% The number of bins into which we will divide the range of y-axis response
+% values. Either passed or set as a default
+if nargin >= 3
+    nCategories = nCategoriesIn;
+else
+    nCategories = 21;
+end
 
 
-% Loop over the categories and report the proportion value for the
-% specified frequency in each amplitude category
-    catBinSize = 1 / nCategories;
-    for ii = 1:nCategories
+if nargin >= 4
+    headroom = headroomIn;
+else
+    headroom = [0.1 0.1];
+end
+
+% Determine the number of bins to be reserved for upper and lower headroom
+nLower = round(nCategories.*headroom(1));
+nUpper = round(nCategories.*headroom(2));
+nMid = nCategories - nLower - nUpper;
+
+% Obtain the Watson response values for the frequencies to be modeled
+yVals = watsonTemporalModel(frequenciesToModel, params(1:end-1));
+
+% Map the responses to categories
+binAssignment = 1+round(yVals.*nMid)+nLower;
+binAssignment(binAssignment > nCategories)=nCategories;
+
+% Create a Gaussian kernel to reflect noise in the y-axis measurement
+if params(end)==0
+    gaussKernel = zeros(1,nCategories);
+    gaussKernel(floor(nCategories/2)+1)=1;
+else
+    gaussKernel = gausswin(nCategories,nCategories/(10*params(end)))';
+end
+
+% Initialize a variable to hold the result
+predictedProportions = zeros(length(frequenciesToModel),nCategories);
+
+% Loop over the array of frequenciesToModel
+for ii = 1:length(frequenciesToModel)
+
+    % Assign the bin
+    predictedProportions(ii,binAssignment(ii))=1;
+
+    % Apply smoothing across the proportions of response predicted for this
+    % frequency. This models the effect of noise in the measurement of
+    % response amplitude
+    predictedProportions(ii,:) = conv(predictedProportions(ii,:),gaussKernel,'same');
     
-        categoryCenter = (ii-1)*catBinSize + catBinSize/2;
-        distFromCatCenter = y(freqIdxInSupport) - categoryCenter;
-        if ii == 1
-            if distFromCatCenter < 0 
-                predictedProportions(jj,ii) = 1;
-            else
-                predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize); 
-            end
-        elseif ii == nCategories
-            if distFromCatCenter > 0
-                predictedProportions(jj,ii) = 1;
-            else
-                predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize);
-            end
-        else
-            predictedProportions(jj,ii) = (1 - abs(distFromCatCenter)/catBinSize);
-        end
+    % Ensure that the sum of probabilities across categories for a given
+    % frequency is unity
+    predictedProportions(ii,:) = predictedProportions(ii,:)/sum(predictedProportions(ii,:));
     
-    end
-    
-    
-    predictedProportions(predictedProportions<0)=0;
-
-
-    predictedProportions(jj,:) = smoothdata(predictedProportions(jj,:),'gaussian',smoothSize);
-    predictedProportions(jj,:) = predictedProportions(jj,:)/sum(predictedProportions(jj,:));
 end
 
 

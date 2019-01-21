@@ -1,4 +1,4 @@
-function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
+function y = watsonTemporalModel(frequenciesToModel, params, params_centerAmplitude)
 % Beau Watson's 1986 center-surround neural temporal sensitivity model
 %
 % Syntax:
@@ -48,15 +48,14 @@ function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
 %   offset so that the minimum amplitude value is zero prior to fitting.
 %
 % Inputs:
-%   frequenciesHz         - 1xn vector that provides the stimulus
-%                           frequencies for which the model will be
+%   frequenciesToModel    - 1xn vector that provides the stimulus
+%                           frequencies in Hz for which the model will be
 %                           evaluated
 %   params                - 1x3 vector of model parameters:
 %                             tau - time constant of the center filter (in
-%                                   seconds)
-%                           kappa - multiplier of the time-constant for the
-%                                   surround
-%                            zeta - multiplier that scales the amplitude of
+%                                   msecs)
+%                           kappa - multiplier surround time-constant
+%                            zeta - multiplier of the surround amplitude
 %                                   the surround filter
 %   params_centerAmplitude - Scalar. Optional. The fourth parameter of the
 %                           model 
@@ -68,7 +67,7 @@ function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
 %{
     % Demonstrate basic output of the model
     freqHz = logspace(0,log10(64),100);
-    params = [0.01 2 1];
+    params = [2 2 1];
     semilogx(freqHz,watsonTemporalModel(freqHz,params),'-k');    
 %}
 %{
@@ -78,7 +77,7 @@ function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
     % Adjust the BOLD response to deal with negative values
     minBOLD = min(pctBOLDresponse)
     if minBOLD < 0
-        scaledBOLDresponse = pctBOLDresponse - minBOLD
+        scaledBOLDresponse = pctBOLDresponse - minBOLD;
     else
         scaledBOLDresponse = pctBOLDresponse;
         minBOLD = 0;
@@ -89,7 +88,7 @@ function y = watsonTemporalModel(frequenciesHz, params, params_centerAmplitude)
     % Scale the x vector so that the max is zero
     scaledBOLDresponse = scaledBOLDresponse ./ splineInterpolatedMax;
     myObj = @(p) sqrt(sum((scaledBOLDresponse-watsonTemporalModel(stimulusFreqHz,p)).^2));
-    x0 = [0.004 2 1];
+    x0 = [4 2 1];
     params = fmincon(myObj,x0,[],[]);
     semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,params).*splineInterpolatedMax+minBOLD,'-k');
     hold on
@@ -108,20 +107,20 @@ surroundFilterOrder = 10; % Order of the surround (usually slow) filter
 freqDomain = logspace(-1,log10(200),100);
 
 % Sanity check the frequency input
-if max(frequenciesHz)>max(freqDomain) || min(frequenciesHz)<min(freqDomain)
+if max(frequenciesToModel)>max(freqDomain) || min(frequenciesToModel)<min(freqDomain)
     error('The passed frequency is out of range for the model');
 end
 
 % Un-pack the passed parameters
-params_tau = params(1);
+params_tau = params(1)./1000;   % Convert from msecs to secs
 params_kappa = params(2);
 params_zeta = params(3);
 
 % Calculte the response. If a centerAmplitude was passed, perform the
 % computation
 if nargin == 3
-    H1 = nStageLowPassFilter(params_tau,frequenciesHz,centerFilterOrder);
-    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz,surroundFilterOrder);
+    H1 = nStageLowPassFilter(params_tau,frequenciesToModel,centerFilterOrder);
+    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesToModel,surroundFilterOrder);
     y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
 else
     % Search to find the center amplitude that provides a maximum response
@@ -129,8 +128,8 @@ else
     % this function.
     myObj = @(x) abs(max(watsonTemporalModel(freqDomain, params, x))-1);
     params_centerAmplitude = fminsearch(myObj,1);
-    H1 = nStageLowPassFilter(params_tau,frequenciesHz,centerFilterOrder);
-    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesHz,surroundFilterOrder);
+    H1 = nStageLowPassFilter(params_tau,frequenciesToModel,centerFilterOrder);
+    H2 = nStageLowPassFilter(params_kappa*params_tau,frequenciesToModel,surroundFilterOrder);
     y = (params_centerAmplitude * H1) - (params_zeta*params_centerAmplitude*H2);
 end
 
