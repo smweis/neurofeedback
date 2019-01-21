@@ -1,14 +1,15 @@
-function play_flash(runNumber,blockDur,scanDur,display,subjectPath,allFreqs)
+function play_flash(runNumber,allFreqs,blockDur,scanDur,display,subjectPath)
 
 %% Displays a black/white full-field flicker
 %
 %   Usage:
-%   play_flash(runNumber,blockDur,scanDur,display,subjectPath,allFreqs)
+%   play_flash(runNumber,allFreqs,blockDur,scanDur,display,subjectPath)
 %
 %   Required inputs:
 %   runNumber           - which run. To determine save data. 
 %
 %   Defaults:
+%   allFreqs            - the domain of possible frequencies to present
 %   blockDur            - duration of stimulus blocks   (default = 12   [seconds])
 %   scanDur             - duration of total run (default = 336 seconds)
 %   display.distance    - 106.5; % distance from screen (cm) - (UPenn - SC3T);
@@ -16,7 +17,6 @@ function play_flash(runNumber,blockDur,scanDur,display,subjectPath,allFreqs)
 %   display.height      - 39.2257; % height of screen (cm) - (UPenn - SC3T);
 %   subjectPath         - passed from default for
 %                           tbUseProject('neurofeedback') (default - test subject)
-%   allFreqs            - the domain of possible frequencies to present
 %                          
 %                           
 
@@ -28,6 +28,9 @@ function play_flash(runNumber,blockDur,scanDur,display,subjectPath,allFreqs)
 %   Modified by Steven M Weisberg Jan 2019
 
 %% Set defaults
+if ~exist('allFreqs','var') || isempty(allFreqs)
+    allFreqs = [2,4,8,16,32];
+end
 
 % block duration
 if ~exist('blockDur','var')
@@ -54,11 +57,6 @@ end
 if ~exist('subjectPath','var') || isempty(subjectPath)
     [subjectPath] = getPaths('TOME_3040_TEST');
 end
-
-if ~exist('allFreqs','var') || isempty(allFreqs)
-    allFreqs = [2,4,8,16,32];
-end
-
 
 
 %% Debugging
@@ -176,7 +174,6 @@ try
             
             % If it's not the 6th block, then see if Quest+ has a
             % recommendation for which stimulus frequency to present next. 
-            %{
             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*')))
                 
                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
@@ -187,7 +184,6 @@ try
                 readFid = fopen(fullfile(subjectPath,'stimLog',filename),'r');
                 stimFreq = fscanf(readFid,'%d');
                 fclose(readFid);
-            %}
             
             % If there's no Quest+ recommendation yet, randomly pick a
             % frequency from allFreqs. 
