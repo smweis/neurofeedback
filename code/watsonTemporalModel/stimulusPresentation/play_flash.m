@@ -1,11 +1,12 @@
-function play_flash(stimFreq,blockDur,scanDur,tChar,display,subjectPath)
+function play_flash(runNumber,stimFreq,blockDur,scanDur,tChar,display,subjectPath,allFreqs)
 
 %% Displays a black/white full-field flicker
 %
 %   Usage:
-%   play_flash(stimFreq,blockDur,scanDur,tChar,display)
+%   play_flash(runNumber,stimFreq,blockDur,scanDur,tChar,display,subjectPath,allFreqs,debug))
 %
 %   Required inputs:
+%   runNumber           - which run. To determine save data. 
 %
 %   Defaults:
 %   stimFreq            - stimulus flicker frequency    (default = 16   [hertz])
@@ -15,7 +16,13 @@ function play_flash(stimFreq,blockDur,scanDur,tChar,display,subjectPath)
 %   display.distance    - 106.5; % distance from screen (cm) - (UPenn - SC3T);
 %   display.width       - 69.7347; % width of screen (cm) - (UPenn - SC3T);
 %   display.height      - 39.2257; % height of screen (cm) - (UPenn - SC3T);
-%   subjectPath         - passed from default for tbUseProject('neurofeedback')
+%   subjectPath         - passed from default for
+%                           tbUseProject('neurofeedback') (default - test subject)
+%   allFreqs            - the domain of possible frequencies to present
+%                          
+%                           
+
+
 %   Stimulus will flicker at 'stimFreq', occilating between flicker and
 %   grey screen based on 'blockDur'
 %
@@ -55,9 +62,24 @@ if ~exist('subjectPath','var') || isempty(subjectPath)
     [subjectPath] = getPaths('TOME_3040_TEST');
 end
 
+if ~exist('allFreqs','var') || isempty(allFreqs)
+    allFreqs = [2,4,8,16,32,64];
+end
+
+%% Debugging
+debug = 0;
+stimWindow = [];
+
+if debug
+    stimWindow = [10 10 20 20];
+end
+
+
+
 %% Save input variables
-params.stimFreq         = stimFreq;
-params.blockDur         = blockDur;
+params.stimFreq         = nan(1,scanDur/blockDur);
+params.trialTypeStrings = cell(1,length(params.stimFreq));
+params.allFreqs         = allFreqs;
 
 
 %% Set up actualStimuli.txt
@@ -72,8 +94,6 @@ PsychDefaultSetup(2);
 Screen('Preference', 'SkipSyncTests', 2); % Skip sync tests
 screens = Screen('Screens'); % get the number of screens
 screenid = max(screens); % draw to the external screen
-
-allFreqs = [2,4,8,16,32,64];
 
 %% For Trigger
 a = cd;
@@ -99,13 +119,15 @@ res = Screen('Resolution',max(Screen('screens')));
 display.resolution = [res.width res.height];
 PsychImaging('PrepareConfiguration');
 PsychImaging('AddTask', 'General', 'UseRetinaResolution');
-[winPtr, windowRect]            = PsychImaging('OpenWindow', screenid, grey, [10, 10, 20, 20]);
+[winPtr, windowRect]            = PsychImaging('OpenWindow', screenid, grey, stimWindow);
 [mint,~,~] = Screen('GetFlipInterval',winPtr,200);
 display.frameRate = 1/mint; % 1/monitor flip interval = framerate (Hz)
 display.screenAngle = pix2angle( display, display.resolution );
 [center(1), center(2)]          = RectCenter(windowRect); % Get the center coordinate of the window
 fix_dot                         = angle2pix(display,0.25); % For fixation cross (0.25 degree)
-%% Make images
+
+
+%% Make imagesd
 greyScreen = grey*ones(fliplr(display.resolution));
 blackScreen = black*ones(fliplr(display.resolution));
 whiteScreen = white*ones(fliplr(display.resolution));
@@ -173,6 +195,11 @@ try
             disp(['Trial Type - ' trialTypeString]);
             disp(['Trial Number - ' num2str(blockNum) '; Frequency - ' num2str(stimFreq)]);
             
+            
+            
+            params.stimFreq(thisBlock) = stimFreq;
+            params.trialTypeStrings{thisBlock} = trialTypeString;
+            
         end
         
      
@@ -203,6 +230,7 @@ try
     end
     
     sca;
+    save(fullfile(subjectPath,strcat('stimFreqData_Run',num2str(runNumber))),'params');
     disp(['elapsedTime = ' num2str(elapsedTime)]);
     ListenChar(1);
     ShowCursor;

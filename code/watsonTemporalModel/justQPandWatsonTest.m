@@ -7,7 +7,7 @@ close all
 simulatedPsiParams = [];
 
 % This is a low-pass TTF in noisy fMRI data
-%simulatedPsiParams = [10 1 0.83 1];
+simulatedPsiParams = [10 1 0.83 1];
 
 % This is a band-pass TTF in noisy fMRI data
 %simulatedPsiParams = [1.47 1.75 0.83 1];
@@ -158,7 +158,7 @@ fprintf('Simulated parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
 fprintf('Max posterior QUEST+ parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
     psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4));
 
-%% Find aximum likelihood fit.  Use psiParams from QUEST+ as the starting
+%% Find maximum likelihood fit.  Use psiParams from QUEST+ as the starting
 % parameter for the search, and impose as parameter bounds the range
 % provided to QUEST+.
 psiParamsFit = qpFit(questData.trialData,questData.qpPF,psiParamsQuest,questData.nOutcomes,...
