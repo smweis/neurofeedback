@@ -1,18 +1,16 @@
-function play_flash(runNumber,stimFreq,blockDur,scanDur,tChar,display,subjectPath,allFreqs)
+function play_flash(runNumber,blockDur,scanDur,display,subjectPath,allFreqs)
 
 %% Displays a black/white full-field flicker
 %
 %   Usage:
-%   play_flash(runNumber,stimFreq,blockDur,scanDur,tChar,display,subjectPath,allFreqs,debug))
+%   play_flash(runNumber,blockDur,scanDur,display,subjectPath,allFreqs)
 %
 %   Required inputs:
 %   runNumber           - which run. To determine save data. 
 %
 %   Defaults:
-%   stimFreq            - stimulus flicker frequency    (default = 16   [hertz])
 %   blockDur            - duration of stimulus blocks   (default = 12   [seconds])
 %   scanDur             - duration of total run (default = 336 seconds)
-%   tChar               - {'t'}; % character(s) to signal a scanner trigger
 %   display.distance    - 106.5; % distance from screen (cm) - (UPenn - SC3T);
 %   display.width       - 69.7347; % width of screen (cm) - (UPenn - SC3T);
 %   display.height      - 39.2257; % height of screen (cm) - (UPenn - SC3T);
@@ -30,11 +28,6 @@ function play_flash(runNumber,stimFreq,blockDur,scanDur,tChar,display,subjectPat
 %   Modified by Steven M Weisberg Jan 2019
 
 %% Set defaults
-
-% stimulus frequency
-if ~exist('stimFreq','var')
-    stimFreq = 16; % seconds
-end
 
 % block duration
 if ~exist('blockDur','var')
@@ -63,16 +56,20 @@ if ~exist('subjectPath','var') || isempty(subjectPath)
 end
 
 if ~exist('allFreqs','var') || isempty(allFreqs)
-    allFreqs = [2,4,8,16,32,64];
+    allFreqs = [2,4,8,16,32];
 end
+
+
 
 %% Debugging
 debug = 0;
-stimWindow = [];
 
 if debug
     stimWindow = [10 10 20 20];
+else
+    stimWindow = [];
 end
+
 
 
 
@@ -157,19 +154,29 @@ params.endDateTime      = datestr(now); % this is updated below
 elapsedTime = 0;
 disp(['Trigger received - ' params.startDateTime]);
 blockNum = 0;
+
+% randomly select a stimulus frequency to start with 
+whichFreq = randi(length(allFreqs));
+stimFreq = allFreqs(whichFreq);
+
 try
     while elapsedTime < scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
         thisBlock = ceil(elapsedTime/blockDur);
         
         
-        % stim frequency selection and recording
+        % If the block time has elapsed, then time to pick a new stimulus
+        % frequency. 
         if thisBlock > blockNum
             blockNum = thisBlock;
-
-            if mod(blockNum,6) == 0 % every sixth block, display steady screen
+            
+            % Every sixth block, set stimFreq = 0. Will display gray screen
+            if mod(blockNum,6) == 0 
                 trialTypeString = 'baseline';
                 stimFreq = 0;
-                
+            
+            % If it's not the 6th block, then see if Quest+ has a
+            % recommendation for which stimulus frequency to present next. 
+            %{
             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*')))
                 
                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
@@ -180,22 +187,26 @@ try
                 readFid = fopen(fullfile(subjectPath,'stimLog',filename),'r');
                 stimFreq = fscanf(readFid,'%d');
                 fclose(readFid);
-
+            %}
             
-            else % if no QUEST+ stim yet, randomly pick a frequency
+            % If there's no Quest+ recommendation yet, randomly pick a
+            % frequency from allFreqs. 
+            else 
                 trialTypeString = 'random';
-                whichFreq = randi(6);
+                whichFreq = randi(length(allFreqs));
                 stimFreq = allFreqs(whichFreq);
             end
             
+            % Write the stimulus that was presented to a text file so that
+            % Quest+ can see what's actually been presented. 
             fid = fopen(fullfile(subjectPath,'actualStimuli.txt'),'a');
             fprintf(fid,'%d\n',stimFreq);
             fclose(fid);
             
+            % Print the last trial info to the terminal and save it to
+            % params. 
             disp(['Trial Type - ' trialTypeString]);
             disp(['Trial Number - ' num2str(blockNum) '; Frequency - ' num2str(stimFreq)]);
-            
-            
             
             params.stimFreq(thisBlock) = stimFreq;
             params.trialTypeStrings{thisBlock} = trialTypeString;
@@ -203,18 +214,19 @@ try
         end
         
      
-        % display 
-        if stimFreq ~= 0 % flicker
+        % We will handle stimFreq = 0 different to just present a gray
+        % screen. If it's not zero, we'll flicker. 
+        % The flicker case:
+        if stimFreq ~= 0 
             if (elapsedTime - curFrame) > (1/(stimFreq*2))
                 frameCt = frameCt + 1;
                 Screen( 'DrawTexture', winPtr, Texture( mod(frameCt,2) + 1 )); % current frame
-                % Flip to the screen
                 Screen('Flip', winPtr);
                 curFrame = GetSecs - startTime;
             end
-        else % black screen
-            Screen( 'DrawTexture', winPtr, Texture( 3 )); % grey screen
-            % Flip to the screen
+        % The gray screen case. 
+        else 
+            Screen( 'DrawTexture', winPtr, Texture( 3 )); % gray screen
             Screen('Flip', winPtr);
         end
         
@@ -229,6 +241,7 @@ try
         
     end
     
+    % Close screen and save data. 
     sca;
     save(fullfile(subjectPath,strcat('stimFreqData_Run',num2str(runNumber))),'params');
     disp(['elapsedTime = ' num2str(elapsedTime)]);
