@@ -9,8 +9,8 @@ close all
 
 % Leave the simulatedPsiParams empty to try a random set of params.
 % Here are some params to try for specific TTF shapes:
-%	A low-pass TTF in noisy fMRI data: [10 1 0.83 1]
-%   A band-pass TTF in noisy fMRI data: [1.47 1.75 0.83 1]
+%	 A low-pass TTF in noisy fMRI data: [10 1 0.83 1]
+%  A band-pass TTF in noisy fMRI data: [1.47 1.75 0.83 1]
 simulatedPsiParams = [];
 
 % How many trials to run?

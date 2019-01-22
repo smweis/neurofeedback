@@ -1,6 +1,92 @@
 
-clear all;
+clearvars;
 close all;
+
+
+
+
+
+% Leave the simulatedPsiParams empty to try a random set of params
+simulatedPsiParams = [];
+
+% This is a low-pass TTF in noisy fMRI data
+simulatedPsiParams = [10 1 0.83 1];
+
+% This is a band-pass TTF in noisy fMRI data
+%simulatedPsiParams = [1.47 1.75 0.83 1];
+
+% How talkative is the simulation
+showPlots = true;
+verbose = true;
+nTrials = 128;
+
+%% Set up Q+.
+
+% Get the default Q+ params
+myQpParams = qpParams;
+
+% Add the stimulus domain. Log spaced frequencies between 2 and 64 Hz
+nStims = 24; 
+myQpParams.stimParamsDomainList = {logspace(log10(2),log10(64),nStims)};
+
+% The number of outcome categories.
+myQpParams.nOutcomes = 25;
+
+% The headroom is the proportion of outcomes that are reserved above and
+% below the min and max output of the Watson model to account for noise
+headroom = [0.1 0.1];
+
+% Create an anonymous function from qpWatsonTemporalModel in which we
+% specify the number of outcomes for the y-axis response
+myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom);
+
+
+% Define the parameter ranges
+tau = 0.5:0.5:10;	% time constant of the center filter (in msecs)
+kappa = 0.5:0.25:3;	% multiplier of the time-constant for the surround
+zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
+sigma = 0:0.25:2;	% width of the BOLD fMRI noise against the 0-1 y vals
+myQpParams.psiParamsDomainList = {tau, kappa, zeta, sigma};
+
+% Pick some random params to simulate if none provided (but insist on some
+% noise)
+if isempty(simulatedPsiParams)
+    simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) 1];
+end
+
+% Derive some lower and upper bounds from the parameter ranges. This is
+% used later in maximum likelihood fitting
+lowerBounds = [tau(1) kappa(1) zeta(1) sigma(1)];
+upperBounds = [tau(end) kappa(end) zeta(end) sigma(end)];
+
+% Create a simulated observer
+myQpParams.qpOutcomeF = @(f) qpSimulatedObserver(f,myQpParams.qpPF,simulatedPsiParams);
+
+% Warn the user that we are initializing
+if verbose
+    tic
+    fprintf('Initializing Q+. This may take a minute...\n');
+end
+
+% Initialize Q+
+questData = qpInitialize(myQpParams);
+
+% Warn the user we are about to start
+if verbose
+    toc
+    fprintf('Press space to start.\n');
+    pause
+    fprintf('Fitting...');
+end
+
+
+
+
+
+
+
+
+
 
 %% Construct the model object
 temporalFit = tfeIAMP('verbosity','none');
@@ -34,17 +120,16 @@ end
 
 % Create a set of parameter values that are derived from the Watson model
 % We first assign a random stimulus frequency to each stimulus instance
-freqSet = [2 4 8 16 32 64];
-freqInstances = freqSet(randi(length(freqSet),nInstances,1));
+
+freqInstances = myQpParams.stimParamsDomainList(randi(length(myQpParams.stimParamsDomainList),nInstances,1));
+
 %freqInstances = [2,4,8,16,32,64,2,4,8,16,32,64,2,4,8,16,32,64,2,4,8,16,32];
 %freqInstances = [2 4 8 16 32 64 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4];
+
+
 % Now obtain the BOLD fMRI %change amplitude response for each frequency
 % given a set of parameters for the Watson model
-
-% these are estimated from Spitschan J. Neuro.
-%watsonParams = [-0.00251422630566837,1.00595645717933,3.79738894349084,0.951504640228191];
-watsonParams = [0.004 2 1 1];
-modelAmplitudes = watsonTemporalModel(freqInstances, watsonParams);
+modelAmplitudes = watsonTemporalModel(freqInstances, simulatedPsiParams);
 
 
 %% Get the default forward model parameters
@@ -81,10 +166,10 @@ kernelStruct.values=hrf;
 %% Create and plot modeled responses
 
 % Set the noise level and report the params
-params0.noiseSd = 0;
+params0.noiseSd = simulatedPsiParams(end);
 
 % Make the noise pink
-params0.noiseInverseFrequencyPower = 0;
+params0.noiseInverseFrequencyPower = 1;
 
 fprintf('Simulated model parameters:\n');
 temporalFit.paramPrint(params0);
@@ -101,7 +186,7 @@ hold on
 plot(stimulusStruct.timebase/1000,stimulusStruct.values(1,:),'-k','DisplayName','stimulus');
 
 % Now plot the response with convolution and noise, as well as the kernel
-modelResponseStruct = temporalFit.computeResponse(params0,stimulusStruct,kernelStruct,'AddNoise',false);
+modelResponseStruct = temporalFit.computeResponse(params0,stimulusStruct,kernelStruct,'AddNoise',true);
 
 temporalFit.plot(modelResponseStruct,'NewWindow',false,'DisplayName','noisy BOLD response');
 plot(kernelStruct.timebase/1000,kernelStruct.values/max(kernelStruct.values),'-b','DisplayName','kernel');
@@ -122,23 +207,6 @@ thePacket.metaData = [];
 
 
 
-%% Initialize Quest
-
-
-questData = qpInitialize('stimParamsDomainList',{[2 4 8 16 32 64]},...
-    'psiParamsDomainList',{.001:.001:.012,.5:.5:3,.5:.5:3,.5:.5:3},...
-    'qpPF',@qpWatsonTemporalModel,...
-    'nOutcomes',21);
-
-
-
-% we want an initialized copy of this so we can re-run it each time. 
-questDataCopy = questData;
-
-
-
-
-
 % downsample the modelResponseStruct.values to match what we have for the
 % fmri study: 
 
@@ -148,8 +216,7 @@ sampleSignal = testRoiSignal(1);
 
 latestPoint = 1;
 
-pctBOLDbins = -1.5:.2:2.5;
-
+pctBOLDbins = 0:(myQpParams.noOutcomes - 1):1;
 
 while latestPoint < length(testRoiSignal)
     if length(testRoiSignal) - latestPoint < 5
