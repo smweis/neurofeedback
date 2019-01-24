@@ -269,34 +269,18 @@ while latestPoint < length(testRoiSignal)
     stimNumber = ceil(length(sampleSignal)/trialLength);
     stimNumberReal = stimNumber - floor(stimNumber/baselineTrialRate) - 1;
     
-    % Change the bins to account for the max and min of paramMainMatrix
-    % based on the number of outcomes Q+ expects. 
+    
     pctBOLDbins = changePctSignalBins(params.paramMainMatrix,myQpParams.nOutcomes);
     
-    % Reset questData using a copy initialized before any trials had been run 
-    % with Q+. This allows us to use new outcomes if the TFE has a better
-    % guess based on more data. 
     questData = questDataCopy;
     tic
-    % Discretize the outcome based on which bin the parameter estimate
-    % would be in. 
     outcome = discretize(params.paramMainMatrix,pctBOLDbins);
-    % Then give us the bin number to pctBOLDbins mapping for plotting
-    % later.
     yOutcome = ((outcome-nLower)/nMid)-(1/myQpParams.nOutcomes)/2;
 
-    
-    % For each trial we have run (non-baseline), update Q+. 
-    % This loop takes about .1 second PER TRIAL. 
     for i = 1:stimNumberReal
         questData = qpUpdate(questData,freqInstances(i),outcome(i));
     end
-    
     toc
-    
-    
-    % Plot all current stimuli for trials, along with entropy. 
-    % These plots will reset each time more data is acquired. 
     if showPlots && ~isempty(i)
         
         % Current guess at the TTF, along with stims and outcomes    
