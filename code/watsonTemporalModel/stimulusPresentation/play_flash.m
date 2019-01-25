@@ -1,25 +1,23 @@
-function play_flash(runNumber,subjectPath,allFreqs,blockDur,scanDur,display)
+function play_flash(runNumber,subjectPath,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
 
 %% Displays a black/white full-field flicker
 %
 %   Usage:
-%   play_flash(runNumber,allFreqs,blockDur,scanDur,display,subjectPath)
+%   play_flash(runNumber,subjectPath,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
 %
 %   Required inputs:
-%   runNumber           - which run. To determine save data. 
+%   runNumber               - which run. To determine save data. 
 %
 %   Defaults:
-%   allFreqs            - the domain of possible frequencies to present
-%   blockDur            - duration of stimulus blocks   (default = 12   [seconds])
-%   scanDur             - duration of total run (default = 336 seconds)
-%   display.distance    - 106.5; % distance from screen (cm) - (UPenn - SC3T);
-%   display.width       - 69.7347; % width of screen (cm) - (UPenn - SC3T);
-%   display.height      - 39.2257; % height of screen (cm) - (UPenn - SC3T);
-%   subjectPath         - passed from default for
-%                           tbUseProject('neurofeedback') (default - test subject)
-%                          
-%                           
-
+%   allFreqs                - the domain of possible frequencies to present
+%   subjectPath             - passed from default for
+%                               tbUseProject('neurofeedback') (default - test subject)
+%   blockDur                - duration of stimulus blocks   (default = 12   [seconds])
+%   scanDur                 - duration of total run (default = 336 seconds)
+%   display.distance        - 106.5; % distance from screen (cm) - (UPenn - SC3T);
+%   display.width           - 69.7347; % width of screen (cm) - (UPenn - SC3T);
+%   display.height          - 39.2257; % height of screen (cm) - (UPenn - SC3T);
+%   baselineTrialFrequency  - how frequently a baseline trial occurs
 
 %   Stimulus will flicker at 'stimFreq', occilating between flicker and
 %   grey screen based on 'blockDur'
@@ -52,6 +50,12 @@ if ~exist('display','var') || isempty(display)
     display.distance = 106.5; % distance from screen (cm) - (UPenn - SC3T);
     display.width = 69.7347; % width of screen (cm) - (UPenn - SC3T);
     display.height = 39.2257; % height of screen (cm) - (UPenn - SC3T);
+end
+
+
+% how often baseline trials occur
+if ~exist('baselineTrialFrequency','var')
+    baselineTrialFrequency = 6;
 end
 
 if ~exist('subjectPath','var') || isempty(subjectPath)
@@ -168,7 +172,7 @@ try
             blockNum = thisBlock;
             
             % Every sixth block, set stimFreq = 0. Will display gray screen
-            if mod(blockNum,6) == 0 
+            if mod(blockNum,baselineTrialFrequency) == 0 
                 trialTypeString = 'baseline';
                 stimFreq = 0;
             
