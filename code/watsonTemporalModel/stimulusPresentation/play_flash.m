@@ -1,4 +1,4 @@
-function play_flash(runNumber,allFreqs,blockDur,scanDur,display,subjectPath)
+function play_flash(runNumber,subjectPath,allFreqs,blockDur,scanDur,display)
 
 %% Displays a black/white full-field flicker
 %
