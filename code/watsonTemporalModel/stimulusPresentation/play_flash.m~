@@ -1,9 +1,9 @@
-function play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
+function play_flash(runNumber,subjectPath,checkerboardOrFullscreen,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
 
 %% Displays a black/white full-field flicker
 %
 %   Usage:
-%   play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
+%   play_flash(runNumber,subjectPath,checkerboardOrFullscreen,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
 %
 %   Required inputs:
 %   runNumber               - which run. To determine save data. 
@@ -12,7 +12,8 @@ function play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,sca
 %   allFreqs                - the domain of possible frequencies to present
 %   subjectPath             - passed from default for
 %                               tbUseProject('neurofeedback') (default - test subject)
-%   checkerboardSize        - size of the tiles of a checkerboard. If = 0, full screen flash (default - 0)
+%   checkerboardOrFullscreen            - whether or not to use a full screen flash or
+%                               checkerboard pattern. 0 = full screen, 1 = checkerboard (default = 0)
 %   blockDur                - duration of stimulus blocks   (default = 12   [seconds])
 %   scanDur                 - duration of total run (default = 336 seconds)
 %   display.distance        - 106.5; % distance from screen (cm) - (UPenn - SC3T);
@@ -38,8 +39,8 @@ end
 
 
 % checkerboard pattern or full screen
-if ~exist('checkerboardSize','var')
-    checkerboardSize = 0; % seconds
+if ~exist('checkerboardOrFullscreen','var')
+    checkerboardOrFullscreen = 0; % seconds
 end
 
 
@@ -72,7 +73,7 @@ end
 
 
 %% Debugging
-debug = 0;
+debug = 1;
 
 if debug
     stimWindow = [10 10 200 200];
@@ -87,7 +88,7 @@ end
 params.stimFreq                 = nan(1,scanDur/blockDur);
 params.trialTypeStrings         = cell(1,length(params.stimFreq));
 params.allFreqs                 = allFreqs;
-params.checkerboardOrFullscreen = checkerboardSize;
+params.checkerboardOrFullscreen = checkerboardOrFullscreen;
 
 %% Set up actualStimuli.txt
 % A text file that will serve as a record for all stimuli frequencies
@@ -137,13 +138,16 @@ fix_dot                         = angle2pix(display,0.25); % For fixation cross 
 %% Make images
 greyScreen = grey*ones(fliplr(display.resolution));
 
-if checkerboardSize == 0
-    texture1 = black*ones(fliplr(display.resolution));
-    texture2 = white*ones(fliplr(display.resolution));
-else
-    texture1 = double(checkerboard(checkerboardSize/2,res.height/checkerboardSize,res.width/checkerboardSize)>.5);
-    texture2 = double(checkerboard(checkerboardSize/2,res.height/checkerboardSize,res.width/checkerboardSize)<.5);
-end
+if ~checkerboardOrFullscreen
+texture1 = black*ones(fliplr(display.resolution));
+texture2 = white*ones(fliplr(display.resolution));
+
+
+%blackUpperLeft = double(checkerboard(20,45,72)>.5);
+%blackUpperRight = double(checkerboard(20,45,72)<.5);
+
+blackUpperLeft = double(checkerboard(30,18,32)>.5);
+blackUpperRight = double(checkerboard(30,18,32)<.5);
 
 Texture(1) = Screen('MakeTexture', winPtr, texture1);
 Texture(2) = Screen('MakeTexture', winPtr, texture2);
@@ -266,7 +270,6 @@ try
     
 catch ME
     Screen('CloseAll');
-    save(fullfile(subjectPath,strcat('stimFreqData_Run',num2str(runNumber))),'params');
     ListenChar;
     ShowCursor;
     rethrow(ME);
