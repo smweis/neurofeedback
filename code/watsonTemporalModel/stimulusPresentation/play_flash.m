@@ -12,7 +12,9 @@ function play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,sca
 %   allFreqs                - the domain of possible frequencies to present
 %   subjectPath             - passed from default for
 %                               tbUseProject('neurofeedback') (default - test subject)
-%   checkerboardSize        - size of the tiles of a checkerboard. If = 0, full screen flash (default - 0)
+%   checkerboardSize        - size of the tiles of a checkerboard. If = 0,
+%                               full screen flash (default - 0). 60 is a 
+%                               good option for a 1080 x 1920 display
 %   blockDur                - duration of stimulus blocks   (default = 12   [seconds])
 %   scanDur                 - duration of total run (default = 336 seconds)
 %   display.distance        - 106.5; % distance from screen (cm) - (UPenn - SC3T);
@@ -71,7 +73,7 @@ if ~exist('subjectPath','var') || isempty(subjectPath)
 end
 
 
-%% Debugging
+%% Debugging?
 debug = 0;
 
 if debug
@@ -91,9 +93,9 @@ params.checkerboardOrFullscreen = checkerboardSize;
 
 %% Set up actualStimuli.txt
 % A text file that will serve as a record for all stimuli frequencies
-% presented
+% presented during this run number.
 
-fid = fopen(fullfile(subjectPath,'actualStimuli.txt'),'w');
+fid = fopen(fullfile(subjectPath,strcat('actualStimuli',num2str(runNumber),'.txt')),'w');
 fclose(fid);
 
 %% Initial settings
