@@ -260,7 +260,7 @@ try
     
     % Close screen and save data. 
     sca;
-    save(fullfile(subjectPath,strcat('stimFreqData_Run',num2str(runNumber))),'params');
+    save(fullfile(subjectPath,strcat('stimFreqData_Run',num2str(runNumber),'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     disp(['elapsedTime = ' num2str(elapsedTime)]);
     ListenChar(1);
     ShowCursor;
