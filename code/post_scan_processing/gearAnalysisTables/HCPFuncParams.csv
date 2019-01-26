@@ -1,0 +1,8 @@
+projectLabel,,gearName,hcp-func,rootSession,fMRITimeSeries,ConfigKeys,"{'Subject','RegName','fMRIName','BiasCorrection'}",ConfigVals,"{subjectName,'FS',rootSessionTag,'SEBased'}"
+Inputs,GradientCoeff,SpinEchoNegative,SpinEchoPositive,StructZip,fMRIScout,fMRITimeSeries,FreeSurferLicense,,
+DefaultLabel,,SpinEchoFieldMap_AP,SpinEchoFieldMap_PA,hcp-struct/hcpstruct.zip,,,,,
+FileSuffix,grad,nifti,nifti,zip,nifti,nifti,txt,,
+FileType,project,acquisition,acquisition,analysis,acquisition,acquisition,project,,
+ExactStringMatch,0,0,0,0,0,0,0,Notes,
+,,,,,,,,,
+HERO_gka1,realtime/coeff.grad,realtime/HERO_gka1/checkFlicker_1,realtime/HERO_gka1/checkFlicker_1,tome/TOME_3021/Session 1a/,realtime/HERO_gka1/checkFlicker_1/tfMRI_CheckFlash_PA_run1_SBRef ,realtime/HERO_gka1/checkFlicker_1/tfMRI_CheckFlash_PA_run1,realtime/freesurfer_license.txt,HCP structural output from this subject's TOME run,
