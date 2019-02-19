@@ -16,7 +16,7 @@ simulatedPsiParams = [10 1 0.83 1];
 %simulatedPsiParams = [1.47 1.75 0.83 1];
 
 % Some information about the trials?
-nTrials = 50; % how many trials
+nTrials = 24; % how many trials
 trialLength = 12; % seconds per trial
 baselineTrialRate = 6; % present a gray screen (baseline trial) every X trials
 
@@ -35,7 +35,7 @@ nStims = 24;
 myQpParams.stimParamsDomainList = {logspace(log10(2),log10(64),nStims)};
 
 % The number of outcome categories.
-myQpParams.nOutcomes = 10;
+myQpParams.nOutcomes = 25;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
