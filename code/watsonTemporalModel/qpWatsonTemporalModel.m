@@ -101,13 +101,25 @@ else
     headroom = [0.1 0.1];
 end
 
+%% Params to vars
+tau = params(1);	% time constant of the center filter (in msecs)
+kappa = params(2);	% multiplier of the time-constant for the surround
+zeta = params(3);	% multiplier of the amplitude of the surround
+beta = params(4);   % multiplier of the Watson 0-1 to the bins
+sigma = params(5);	% width of the BOLD fMRI noise against the 0-1 y vals
+
+
 % Determine the number of bins to be reserved for upper and lower headroom
 nLower = round(nCategories.*headroom(1));
 nUpper = round(nCategories.*headroom(2));
 nMid = nCategories - nLower - nUpper;
 
 % Obtain the Watson response values for the frequencies to be modeled
-yVals = watsonTemporalModel(frequenciesToModel, params(1:end-1));
+yVals = watsonTemporalModel(frequenciesToModel, [tau kappa zeta]);
+
+% Scale the yVals by the beta. This serves to adjust the 0-1 output of the
+% Watson model to the empirical maximum BOLD fMRI response
+yVals = yVals .* beta;
 
 % Map the responses to categories
 binAssignment = 1+round(yVals.*nMid)+nLower;
@@ -118,7 +130,7 @@ if params(end)==0
     gaussKernel = zeros(1,nCategories);
     gaussKernel(floor(nCategories/2)+1)=1;
 else
-    gaussKernel = gausswin(nCategories,nCategories/(10*params(end)))';
+    gaussKernel = gausswin(nCategories,nCategories/(10*sigma))';
 end
 
 % Initialize a variable to hold the result
