@@ -35,7 +35,7 @@ myQpParams.nOutcomes = 31;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
-headroom = [0.2 0.2];
+headroom = [0.1 0.3];
 
 % Create an anonymous function from qpWatsonTemporalModel in which we
 % specify the number of outcomes for the y-axis response
@@ -45,19 +45,20 @@ myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom
 tau = 0.5:0.5:10;	% time constant of the center filter (in msecs)
 kappa = 0.5:0.25:3;	% multiplier of the time-constant for the surround
 zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
+beta = 0.8:0.1:1.1; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.25:2;	% width of the BOLD fMRI noise against the 0-1 y vals
-myQpParams.psiParamsDomainList = {tau, kappa, zeta, sigma};
+myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
 % Pick some random params to simulate if none provided (but insist on some
 % noise)
 if isempty(simulatedPsiParams)
-    simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) 1];
+    simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) randsample(beta,1) 1];
 end
 
 % Derive some lower and upper bounds from the parameter ranges. This is
 % used later in maximum likelihood fitting
-lowerBounds = [tau(1) kappa(1) zeta(1) sigma(1)];
-upperBounds = [tau(end) kappa(end) zeta(end) sigma(end)];
+lowerBounds = [tau(1) kappa(1) zeta(1) beta(1) sigma(1)];
+upperBounds = [tau(end) kappa(end) zeta(end) beta(end) sigma(end)];
 
 % Create a simulated observer
 myQpParams.qpOutcomeF = @(f) qpSimulatedObserver(f,myQpParams.qpPF,simulatedPsiParams);
@@ -157,16 +158,16 @@ end
 % on the gridded parameter domain.
 psiParamsIndex = qpListMaxArg(questData.posterior);
 psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
-fprintf('Simulated parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
-    simulatedPsiParams(1),simulatedPsiParams(2),simulatedPsiParams(3),simulatedPsiParams(4));
-fprintf('Max posterior QUEST+ parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
-    psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4));
+fprintf('Simulated parameters: %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+    simulatedPsiParams(1),simulatedPsiParams(2),simulatedPsiParams(3),simulatedPsiParams(4),simulatedPsiParams(5));
+fprintf('Max posterior QUEST+ parameters: %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+    psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4),psiParamsQuest(5));
 
 %% Find maximum likelihood fit. Use psiParams from QUEST+ as the starting
 % parameter for the search, and impose as parameter bounds the range
 % provided to QUEST+.
 psiParamsFit = qpFit(questData.trialData,questData.qpPF,psiParamsQuest,questData.nOutcomes,...
     'lowerBounds', lowerBounds,'upperBounds',upperBounds);
-fprintf('Maximum likelihood fit parameters: %0.1f, %0.1f, %0.1f, %0.2f\n', ...
-    psiParamsFit(1),psiParamsFit(2),psiParamsFit(3),psiParamsFit(4));
+fprintf('Maximum likelihood fit parameters: %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+    psiParamsFit(1),psiParamsFit(2),psiParamsFit(3),psiParamsFit(4),psiParamsFit(5));
 
