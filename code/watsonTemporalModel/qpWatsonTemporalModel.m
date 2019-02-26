@@ -18,8 +18,10 @@ function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params
 %   frequenciesToModel    - nx1 column vector of frequencies (in Hz) for 
 %                           which the Watson TTF will be evaluated and 
 %                           predicted proportions returned
-%   params                - 1x4 vector. The first three values correspond
+%   params                - 1x5 vector. The first three values correspond
 %                           to the three parameters of watsonTemporalModel.
+%                           The second to last parameter is a scaling
+%                           factor, mapping percent BOLD to a 0-1 range.
 %                           The last parameter is the sigma of the Gaussian
 %                           smoothing to apply across the category
 %                           boundaries.

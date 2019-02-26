@@ -1,24 +1,5 @@
-
-% After the first time you run this, saves you the trouble of
-% re-initializing questData
 clearvars('-except','questDataCopy');
 close all;
-
-
-% The order of tasks here is: 
-% 1. Set up Q+.
-% 2. Set up temporal fitting engine object. 
-% 3. Set up model response.
-%    3a. Create random sequence of frequencies.
-%    3b. Get output for those frequencies from watson model. 
-%    3c. Use tfe's computeResponse to create a simulated time series 
-%       of 'fmri' data. 
-%    3d. Decimate time series to downsample so it's a 1 second TR per 10 
-%       time points. 
-% 4. Feed the model timeseries to TFE, 12 'TRs' at a time. Have TFE
-%       estimate the parameter for each stimulus, then transform the
-%       stimulus into bins. Feed the frequency from each trial plus the bin
-%       to Quest+. 
 
 
 % set rng
@@ -31,7 +12,7 @@ simulatedPsiParams = [];
 %simulatedPsiParams = [10 1 0.83 .8 .1];
 
 % This is a band-pass TTF in noisy fMRI data
-simulatedPsiParams = [1.47 1.75 0.83 1 .1];
+%simulatedPsiParams = [1.47 1.75 0.83 1 1];
 
 % Some information about the trials?
 nTrials = 256; % how many trials
@@ -50,14 +31,14 @@ myQpParams = qpParams;
 
 % Add the stimulus domain. Log spaced frequencies between 2 and 64 Hz
 nStims = 24; 
-myQpParams.stimParamsDomainList = {logspace(log10(1),log10(64),nStims)};
+myQpParams.stimParamsDomainList = {logspace(log10(2),log10(64),nStims)};
 
 % The number of outcome categories.
-myQpParams.nOutcomes = 31;
+myQpParams.nOutcomes = 15;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
-headroom = [0.1 0.1];
+headroom = [0.1 0.3];
 
 % Create an anonymous function from qpWatsonTemporalModel in which we
 % specify the number of outcomes for the y-axis response
@@ -133,9 +114,9 @@ nTimeSamples = size(stimulusStruct.timebase,2);
 
 
 eventTimes=[];
-for ii=0:(nTrials)
-    if mod(ii,baselineTrialRate)~=0
-        eventTimes(end+1) = (ii)*eventDuration;
+for ii=1:(nTrials)
+    if mod(ii,baselineTrialRate)~=1
+        eventTimes(end+1) = (ii-1)*eventDuration;
     end
 end
 
@@ -209,16 +190,16 @@ thePacket.metaData = [];
 if showPlots
     % Set up the TTF figure
     figure
-    subplot(3,1,1)
+    subplot(2,1,1)
     freqDomain = logspace(0,log10(100),100);
     a = [];
-    semilogx(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-2)).*simulatedPsiParams(end-1),'-k');
+    semilogx(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-2).*simulatedPsiParams(end-1)),'-k');
     ylim([-0.5 1.5]);
     xlabel('log stimulus Frequency [Hz]');
     ylabel('Relative response amplitude');
     title('Estimate of Watson TTF');
     hold on
-    currentFuncHandle = semilogx(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-2).*simulatedPsiParams(end-1)),'-k');
+    currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-2)),'-k');
 
     % Calculate the lower headroom bin offset. We'll use this later
     nLower = round(headroom(1)*myQpParams.nOutcomes);
@@ -226,28 +207,21 @@ if showPlots
     nMid = myQpParams.nOutcomes - nLower - nUpper;
     
     % Set up the entropy x trial figure
-    subplot(3,1,2)
-    entropyAfterTrial = nan(1,length(eventTimes));
-    currentEntropyHandle = plot(1:length(eventTimes),entropyAfterTrial,'*k');
+    subplot(2,1,2)
+    entropyAfterTrial = nan(1,nTrials);
+    currentEntropyHandle = plot(1:nTrials,entropyAfterTrial,'*k');
     xlim([1 nTrials]);
     title('Model entropy by trial number');
     xlabel('Trial number');
     ylabel('Entropy');
-    
-    subplot(3,1,3)
-    xlim([0 totalTime/100]);
-    title('Simulated Data');
-    xlabel('Seconds');
-    ylabel('Response Amplitude');
 end
 
 
 
 
 
-maxBOLD = 1.5;
-minBOLD = -.5;
-pctBOLDbins = linspace(minBOLD,maxBOLD,myQpParams.nOutcomes);
+
+pctBOLDbins = linspace(-.3,1.3,myQpParams.nOutcomes);
 
 stimNumberReal = 1;
 
@@ -255,31 +229,15 @@ stimNumberReal = 1;
 
 for ii = 1:nTrials
     
-    if ii ~= 0 && mod(ii+1,baselineTrialRate) == 0
+    if mod(ii,baselineTrialRate) == 0
+        continue
+    else
         
-        stimulusStruct.timebase(end+1:end+eventDuration/deltaT) = linspace(stimulusStruct.timebase(end)+deltaT,stimulusStruct.timebase(end) + eventDuration,eventDuration/deltaT);
-        stimulusStruct.values(:,end+1:end+eventDuration/deltaT) = 0;
-
-        rng(s);
-
-        modelResponseStruct = temporalFit.computeResponse(params0,stimulusStruct,[],'AddNoise',true);
         responseStruct.values = decimate(modelResponseStruct.values,10);
-        responseStruct.timebase(end+1:end+eventDuration/TR) = responseStruct.timebase(end)+TR:TR:responseStruct.timebase(end)+eventDuration;
-        
+
         % Demean the signal and take out any linear trends
-        %responseStruct.values = detrend(responseStruct.values);
-        %responseStruct.values = detrend(responseStruct.values,'constant');
-    
-        thePacket.response = responseStruct;
-        thePacket.stimulus = stimulusStruct;
-        
-        
-    elseif stimNumberReal+1 < length(eventTimes)
-        
-        
-        % Demean the signal and take out any linear trends
-        %responseStruct.values = detrend(responseStruct.values);
-        %responseStruct.values = detrend(responseStruct.values,'constant');
+        %sampleSignal = detrend(sampleSignal);
+        %sampleSignal = detrend(sampleSignal,'constant');
     
     
         thePacket.stimulus = stimulusStruct;
@@ -294,8 +252,8 @@ for ii = 1:nTrials
     
         responseStruct.timebase(end+1:end+eventDuration/TR) = responseStruct.timebase(end)+TR:TR:responseStruct.timebase(end)+eventDuration;
 
-        params.paramMainMatrix(params.paramMainMatrix < minBOLD) = minBOLD;
-        params.paramMainMatrix(params.paramMainMatrix > maxBOLD) = maxBOLD;
+        params.paramMainMatrix(params.paramMainMatrix < -.3) = -.3;
+        params.paramMainMatrix(params.paramMainMatrix > 1.3) = 1.3;
 
         outcome = discretize(params.paramMainMatrix,pctBOLDbins);
     
@@ -323,8 +281,6 @@ for ii = 1:nTrials
         
         rng(s);
         modelResponseStruct = temporalFit.computeResponse(params0,stimulusStruct,[],'AddNoise',true);
-        responseStruct.values = decimate(modelResponseStruct.values,10);
-
     end
     
     
@@ -333,33 +289,24 @@ for ii = 1:nTrials
     if showPlots
         
         % Current guess at the TTF, along with stims and outcomes    
-        subplot(3,1,1)
+        subplot(2,1,1)
         delete(a);
         a = scatter(freqInstances(1:stimNumberReal-1),params.paramMainMatrix(1:stimNumberReal-1),'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2);          
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
         delete(currentFuncHandle)
-        currentFuncHandle = semilogx(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest(1:end-2).*psiParamsQuest(end-1)),'-r');
+        currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest(1:end-2)),'-r');
 
         % Entropy plot
-        subplot(3,1,2)
+        subplot(2,1,2)
         delete(currentEntropyHandle)
         entropyAfterTrial(1:stimNumberReal-1)=questData.entropyAfterTrial;
         plot(1:stimNumberReal-1,entropyAfterTrial(1:stimNumberReal-1),'*k');
-        xlim([1 length(eventTimes)]);
+        xlim([1 nTrials]);
         ylim([0 nanmax(entropyAfterTrial)]);
         xlabel('Trial number');
         ylabel('Entropy');
 
-        % Simulated response plot
-        subplot(3,1,3)
-        plot(modelResponseStruct.values);
-        xlim([0 totalTime/100]);
-        title('Simulated Data');
-        xlabel('Seconds');
-        ylabel('Response Amplitude');
-        ylim([min(pctBOLDbins) max(pctBOLDbins)]);
-        
         drawnow
     end
         
@@ -387,6 +334,21 @@ fprintf('Maximum likelihood fit parameters: %0.1f, %0.1f, %0.1f, %0.2f, %0.2f\n'
 
 
 
+%% Create a figure window for TFE
+figure;
+hold on
+% Add the stimulus profile to the plot
+plot(stimulusStruct.timebase/1000,stimulusStruct.values(1,:),'-k','DisplayName','stimulus');
 
+% Now plot the response with convolution and noise, as well as the kernel
+%modelResponseStruct = temporalFit.computeResponse(params0,stimulusStruct,kernelStruct,'AddNoise',true);
 
+%temporalFit.plot(modelResponseStruct,'NewWindow',false,'DisplayName','noisy BOLD response');
+%plot(kernelStruct.timebase/1000,kernelStruct.values/max(kernelStruct.values),'-b','DisplayName','kernel');
+
+% Plot of the temporal fit results
+temporalFit.plot(modelResponseStruct,'Color',[0 1 0],'NewWindow',false,'DisplayName','model fit');
+legend('show');legend('boxoff');
+
+plot(sampleSignal,'b','DisplayName','sample signal');
 
