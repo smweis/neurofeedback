@@ -35,6 +35,13 @@ T1Path = fullfile(subjectDir,horzcat(subjectID,'_T1.nii.gz'));
 funcDataPath = fullfile(subjectDir,'TOME_3021','MNINonLinear','Results','tfMRI_CheckFlash_PA_run1','tfMRI_CheckFlash_PA_run1.nii.gz');
 
 
+
+
+
+%%%%%%%%%%%%%%%%
+% THE BOLD DATA FROM 
+
+
 % Extract brain from T1 
 fprintf('BET\n');
 cmd = horzcat('/usr/local/fsl/bin/bet ',T1Path,' ',subjectDir,'/betT1.nii.gz');

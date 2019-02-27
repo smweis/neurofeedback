@@ -28,10 +28,10 @@ s = rng;
 simulatedPsiParams = [];
 
 % This is a low-pass TTF in noisy fMRI data
-%simulatedPsiParams = [10 1 0.83 .8 .1];
+simulatedPsiParams = [10 1 0.83 .8 1];
 
 % This is a band-pass TTF in noisy fMRI data
-simulatedPsiParams = [1.47 1.75 0.83 1 .1];
+%simulatedPsiParams = [1.47 1.75 0.83 1 1];
 
 % Some information about the trials?
 nTrials = 256; % how many trials
@@ -57,7 +57,7 @@ myQpParams.nOutcomes = 31;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
-headroom = [0.1 0.1];
+headroom = [0.1 0.3];
 
 % Create an anonymous function from qpWatsonTemporalModel in which we
 % specify the number of outcomes for the y-axis response
@@ -245,8 +245,8 @@ end
 
 
 
-maxBOLD = 1.5;
-minBOLD = -.5;
+maxBOLD = 1.8;
+minBOLD = -.6;
 pctBOLDbins = linspace(minBOLD,maxBOLD,myQpParams.nOutcomes);
 
 stimNumberReal = 1;
