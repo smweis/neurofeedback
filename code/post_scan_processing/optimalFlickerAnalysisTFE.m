@@ -139,7 +139,7 @@ hold on; semilogx(uniqueStims,meanBoldPerStim,'r*');
 xlabel('Stimulus Frequency, log');
 ylabel('Arbitrary units, relative activation');
 semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,watsonParams),'-k');
-    
+legend('Individual trial data','Mean per freqHz','Best Watson fit');    
 
 end
 

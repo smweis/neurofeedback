@@ -1,9 +1,9 @@
-function [detrendTimeseries,stimParams] = optimalFlickerAnalysisPreprocess(subjectID,subjectDirStem,runNum,runName,retinotopyVars)
+function [detrendTimeseries] = optimalFlickerAnalysisPreprocess(subjectID,subjectDirStem,runNum,runName,retinotopyVars)
 % Registration and signal extraction for the optimal flicker analysis
 % pipeline. 
 
 % Syntax:
-%  [detrendTimeseries,stimParams] = optimalFlickerAnalysisPreprocess(subjectID,subjectDirStem,runNum,runName,retinotopyVars)
+%  [detrendTimeseries] = optimalFlickerAnalysisPreprocess(subjectID,subjectDirStem,runNum,runName,retinotopyVars)
 %
 %
 % Dependencies: 
@@ -34,8 +34,6 @@ function [detrendTimeseries,stimParams] = optimalFlickerAnalysisPreprocess(subje
 %   detrendTimeseries      - 1xn array that is the extracted signal from
 %                            the region of interest after linear and 
 %                            constant detrending 
-%   stimParams             - the stimulus parameters from this run, if they
-%                            have been copied over into the stimulus directory.
 %   
 % Examples
 %{
@@ -69,7 +67,7 @@ addpath(runDir);
 addpath(subjectDir);
 
 % Handle retinotopy vars 
-if nargin < 5
+if ~exist(retinotopyVars,'var')
     retinotopyVars.areas = 1; % V1
     retinotopyVars.eccentricities = [0 12];
     retinotopyVars.angles = [0 360];
@@ -81,7 +79,7 @@ end
 % We only need to do this once per subject, since it is calculated on T1
 % data, it won't change across runs. 
 
-if ~exist(fullfile(subjectDir,horzcat('mask_area_V',retinotopyVars.areas,'_ecc_',retinotopyVars.eccentricities(1),'_to_',retinotopyVars.eccentricities(2),'.nii')),'file')
+if ~exist(fullfile(subjectDir,horzcat('mask_area_V',retinotopyVars.areas,'_ecc_'retinotopyVars.eccentricities(0),'_to_'retinotopyVars.eccentricities(1),'.nii'),'file')
     
     % Retintopy data, downloaded from Flywheel from a previous study.
     areasPath = fullfile(subjectDir,horzcat(subjectID,'_native.template_areas.nii.gz'));
@@ -106,13 +104,6 @@ funcDataPath = fullfile(runDir,'MNINonLinear','Results',funcName,[funcName '.nii
 
 
 
-% Get scout EPI image.
-fprintf('Create scout EPI image\n');
-cmd = horzcat('/usr/local/fsl/bin/fslroi ',funcDataPath,' ',runDir,'/scoutEPI.nii.gz 0 91 0 109 0 91 0 1');
-system(cmd);
-
-
-
 if ~exist(fullfile(subjectDir,'betT1.nii.gz'),'file')
     % Extract brain from T1 
     fprintf('BET\n');
@@ -124,17 +115,23 @@ if ~exist(fullfile(subjectDir,'betT1.nii.gz'),'file')
     cmd = horzcat('/usr/local/fsl/bin/flirt -ref /usr/local/fsl/data/standard/MNI152_T1_2mm_brain.nii.gz -in ',subjectDir,'/betT1.nii.gz -out ',subjectDir,'/T12standard -omat ',subjectDir,'/T12standard.mat ');
     system(cmd);
 
-    % Apply registration to mask
-    fprintf('Apply registration matrix to mask\n');
-    cmd = horzcat('/usr/local/fsl/bin/flirt -ref /usr/local/fsl/data/standard/MNI152_T1_2mm_brain.nii.gz -in ',maskFullFile,' -applyxfm -init ',subjectDir,'/T12standard.mat -out ',subjectDir,'/retinoMask2standard');
-    system(cmd);
-    
-    % Binarize mask, thresholded at .2 to get rid of some noise
-    fprintf('Threshold and binarize mask\n');
-    cmd = horzcat('/usr/local/fsl/bin/fslmaths ',subjectDir,'/retinoMask2standard -thr .4 -bin ',subjectDir,'/retinoMask2standardBin');
-    system(cmd);
 
-end
+% Get scout EPI image.
+fprintf('Create scout EPI image\n');
+cmd = horzcat('/usr/local/fsl/bin/fslroi ',funcDataPath,' ',runDir,'/scoutEPI.nii.gz 0 91 0 109 0 91 0 1');
+system(cmd);
+
+
+% Apply registration to mask
+fprintf('Apply registration matrix to mask\n');
+cmd = horzcat('/usr/local/fsl/bin/flirt -ref /usr/local/fsl/data/standard/MNI152_T1_2mm_brain.nii.gz -in ',maskFullFile,' -applyxfm -init ',subjectDir,'/T12standard.mat -out ',subjectDir,'/retinoMask2standard');
+system(cmd);
+
+% Binarize mask, thresholded at .2 to get rid of some noise
+fprintf('Threshold and binarize mask\n');
+cmd = horzcat('/usr/local/fsl/bin/fslmaths ',subjectDir,'/retinoMask2standard -thr .4 -bin ',subjectDir,'/retinoMask2standardBin');
+system(cmd);
+
 
 
 %% Spot check
@@ -142,7 +139,7 @@ end
 % Everything (retino data, functional data) should be in MNI space. Spot
 % check that with fsleyes 
 
-cmd = horzcat('/usr/local/fsl/bin/fsleyes ', runDir,'/scoutEPI.nii.gz ',subjectDir,'/retinoMask2standardBin.nii.gz');
+cmd = horzcat('/usr/local/fsl/bin/fsleyes ', subjectDir,'/scoutEPI.nii.gz ',subjectDir,'/retinoMask2standardBin.nii.gz');
 system(cmd);
 
 %% Extract V1 timeseries
@@ -165,12 +162,4 @@ end
 v1Detrend = detrend(v1Timeseries);
 
 detrendTimeseries = v1Detrend/(max(v1Detrend)-min(v1Detrend));
-
-% Load stim params (if they're in the subjectDir)
-try
-    stimParams = load(fullfile(runDir,horzcat('stimDataRun',num2str(runNum),'.mat')));
-catch
-    warning('Stimulus data cannot be found');
-    stimParams = [];
-end
 
