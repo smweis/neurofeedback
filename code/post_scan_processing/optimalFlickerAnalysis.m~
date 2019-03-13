@@ -176,6 +176,10 @@ stimParams = load('/Users/nfuser/Documents/rtQuest/TOME_3021/stimFreqData_Run1_0
 % Load stim frequencies that ARE NOT zero
 stims = stimParams.params.stimFreq(stimParams.params.stimFreq>0);
 
+figure; semilogx(stims,params.paramMainMatrix','*');
+xlabel('Stimulus Frequency, log');
+ylabel('Arbitrary units, relative activation');
+
 minBOLD = min(params.paramMainMatrix);
 if minBOLD < 0
     scaledBOLDresponse = params.paramMainMatrix' - minBOLD;
@@ -184,16 +188,12 @@ else
     minBOLD = 0;
 end
 
-scaledBOLDresponse = scaledBOLDresponse/max(scaledBOLDresponse);
+scaledBOLDresponse = scaledBOLDresponse/max(scaledBOLD
 
 myObj = @(p) sqrt(sum((scaledBOLDresponse-watsonTemporalModel(stims,p)).^2));
-x0 = [2 2 2];
-watsonParams = fmincon(myObj,x0,[],[],[],[],[0 0 0]);
-
+x0 = [4 2 1];
+watsonParams = fmincon(myObj,x0,[],[]);
 stimulusFreqHzFine = logspace(0,log10(30),100);
 
-figure; semilogx(stims,scaledBOLDresponse,'*');
-xlabel('Stimulus Frequency, log');
-ylabel('Arbitrary units, relative activation');
 hold on; semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,watsonParams),'-k');
     
