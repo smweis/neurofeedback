@@ -1,3 +1,7 @@
+
+
+
+
 %% Enter in some initial values
 
 % Set FSL directory
@@ -14,10 +18,6 @@ runName = 'tfMRI_CheckFlash_PA_run';
 subjectDir = fullfile('/Users/nfuser/Documents/rtQuest',subjectID);
 addpath(subjectDir);
 
-% Some scanner details:
-TR = 800; % msecs
-nTrials = 30;
-trialLength = 12000; % msecs
 
 %% Create retinotopy-based V1 mask
 % Retintopy data, downloaded from Flywheel from a previous study. 
@@ -100,100 +100,5 @@ end
 
 v1Detrend = detrend(v1Timeseries);
 
+detrendTimeseries = detrendTimeseries/(max(detrendTimeseries)-min(detrendTimeseries));
 
-
-
-
-
-%% Model V1 timeseries with tFE
-% Construct the model object
-temporalFit = tfeIAMP('verbosity','none');
-
-
-%% Temporal domain of the stimulus
-deltaT = 100; % in msecs
-totalTime = size(funcData,4)*TR; % in msecs.
-
-stimulusStruct.timebase = linspace(0,totalTime-deltaT,totalTime/deltaT);
-nTimeSamples = size(stimulusStruct.timebase,2);
-
-
-% We will create a set of stimulus blocks, each 12 seconds in duration.
-% Every 6th stimulus block (starting with the first) is a "zero frequency"
-% stimulus condition and thus will serve as the reference condition for a
-% linear regression model
-eventTimes=[];
-for ii=0:nTrials-1
-    if mod(ii,6)~=0
-        eventTimes(end+1) = ii*trialLength;
-    end
-end
-nInstances=length(eventTimes);
-defaultParamsInfo.nInstances = nInstances;
-for ii=1:nInstances
-    stimulusStruct.values(ii,:)=zeros(1,nTimeSamples);
-    stimulusStruct.values(ii,(eventTimes(ii)/deltaT)+1:(eventTimes(ii)/deltaT+trialLength/deltaT))=1;
-end
-
-
-% Define a kernelStruct. In this case, a double gamma HRF
-hrfParams.gamma1 = 6;   % positive gamma parameter (roughly, time-to-peak in secs)
-hrfParams.gamma2 = 12;  % negative gamma parameter (roughly, time-to-peak in secs)
-hrfParams.gammaScale = 10; % scaling factor between the positive and negative gamma componenets
-
-kernelStruct.timebase=linspace(0,15999,16000);
-
-% The timebase is converted to seconds within the function, as the gamma
-% parameters are defined in seconds.
-hrf = gampdf(kernelStruct.timebase/1000, hrfParams.gamma1, 1) - ...
-    gampdf(kernelStruct.timebase/1000, hrfParams.gamma2, 1)/hrfParams.gammaScale;
-kernelStruct.values=hrf;
-
-% Normalize the kernel to have unit amplitude
-[ kernelStruct ] = normalizeKernelArea( kernelStruct );
-
-
-
-%% Initialize the response struct
-responseStruct.timebase = linspace(0,totalTime-TR,totalTime/TR);
-responseStruct.values = zeros(1,length(responseStruct.timebase));
-responseStruct.values = v1Detrend;
-
-
-%% Construct a packet and model params
-thePacket.stimulus = stimulusStruct;
-thePacket.response = responseStruct;
-thePacket.kernel = kernelStruct;
-thePacket.metaData = [];
-
-
-params = temporalFit.fitResponse(thePacket,...
-            'defaultParamsInfo', defaultParamsInfo, ...
-            'searchMethod','linearRegression');
-    
-% Load Stims from this run        
-stimParams = load('/Users/nfuser/Documents/rtQuest/TOME_3021/stimFreqData_Run1_01_25_2019_16_35.mat');
-% Load stim frequencies that ARE NOT zero
-stims = stimParams.params.stimFreq(stimParams.params.stimFreq>0);
-
-figure; semilogx(stims,params.paramMainMatrix','*');
-xlabel('Stimulus Frequency, log');
-ylabel('Arbitrary units, relative activation');
-
-minBOLD = min(params.paramMainMatrix);
-if minBOLD < 0
-    scaledBOLDresponse = params.paramMainMatrix' - minBOLD;
-else
-    scaledBOLDresponse = params.paramMainMatrix';
-    minBOLD = 0;
-end
-
-scaledBOLDresponse = scaledBOLDresponse/max(scaledBOLD
-
-myObj = @(p) sqrt(sum((scaledBOLDresponse-watsonTemporalModel(stims,p)).^2));
-x0 = [4 2 1];
-watsonParams = fmincon(myObj,x0,[],[]);
-stimulusFreqHzFine = logspace(0,log10(30),100);
-
-hold on; semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,watsonParams),'-k');
-    
