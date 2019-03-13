@@ -11,7 +11,7 @@ trialLength = 12000;
 
 
 % Wrapper for all runs
-for i = 1:2
+for i = 1:5
     % Change the acquisition direction name depending on even or odd
     if mod(i,2) == 1
         runName = 'tfMRI_CheckFlash_PA_run';
