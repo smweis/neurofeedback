@@ -1,10 +1,10 @@
-function [tfeParams,watsonParams] = optimalFlickerAnalysisTFE(detrendTimeseries,stimParams,TR,nTrials,trialLength)
+function [tfeParams,scaledBOLDresponse,watsonParams] = optimalFlickerAnalysisTFE(detrendTimeseries,stimParams,TR,nTrials,trialLength)
 % Fit a timeseries of fMRI data using the TFE
 % In particular this code is built for fitting flicker using
 % watsonTemporalModel
 
 % Syntax:
-%  [tfeParams,watsonParams] = optimalFlickerAnalysisTFE(detrendTimeseries,stimParams,TR,ntrials,trialLength)
+%  [tfeParams,scaledBOLDresponse,watsonParams] = optimalFlickerAnalysisTFE(detrendTimeseries,stimParams,TR,ntrials,trialLength)
 %
 % Description:
 %	
@@ -23,7 +23,7 @@ function [tfeParams,watsonParams] = optimalFlickerAnalysisTFE(detrendTimeseries,
 %   tfeParams             - parameter estimates from tfe
 %   watsonParams          - estimate of Watson temporal model parameters
 %                           using fmincon
-%
+%   scaledBOLDresponse    - the detrended BOLD parameter estimates
 % Examples
 %{
     
@@ -133,13 +133,14 @@ myObj = @(p) sqrt(sum((meanBoldPerStim-watsonTemporalModel(uniqueStims,p)).^2));
 x0 = [2 2 2];
 watsonParams = fmincon(myObj,x0);
 
-figure; 
+figure
 semilogx(stims,scaledBOLDresponse,'b*');
 hold on; semilogx(uniqueStims,meanBoldPerStim,'r*');
 xlabel('Stimulus Frequency, log');
 ylabel('Arbitrary units, relative activation');
 semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,watsonParams),'-k');
-legend('Individual trial data','Mean per freqHz','Best Watson fit');    
+legend('Individual trial data','Mean per freqHz','Best Watson fit');
+
 
 end
 

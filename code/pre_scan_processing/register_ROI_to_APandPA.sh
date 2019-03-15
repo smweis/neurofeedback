@@ -1,12 +1,14 @@
 # This script will take MPRAGE and a run of functional data from a subject, and register a parcel to the first image. 
+# kastner_v1_10.nii is a parcel taken from Sabine Kastner's probablistic maps of retinotopic cortex. 
+# It is the left/right hemisphere combined ROI for V1 that has been thresholded at 10 participants. 
 
 # to run this from command line: 
 # bash register_ROI_to_APandPA.sh TOME_3040
 
 
-rawdir=/data/jux/sweisberg/neurofeedback/subjects/$1/raw;
-templatedir=/data/jux/sweisberg/neurofeedback/templates;
-outputdir=/data/jux/sweisberg/neurofeedback/subjects/$1/processed;
+rawdir=/Users/nfuser/Documents/rtQuest/$1/raw;
+templatedir=/Users/nfuser/Documents/rtQuest/KastnerParcels;
+outputdir=/Users/nfuser/Documents/rtQuest/$1/processed;
 
 cd $outputdir
 ##########################
@@ -14,7 +16,7 @@ cd $outputdir
 ##########################
 
 # register MPRAGE to MNI space (where v1 parcel comes from)
-flirt -in MPRAGE_bet.nii -ref /share/apps/fsl/5.0.5/data/standard/MNI152_T1_2mm_brain.nii.gz -omat coreg2standard1.mat -bins 256 -cost corratio -searchrx -180 180 -searchry -180 180 -searchrz -180 180 -dof 12
+flirt -in MPRAGE_bet.nii -ref /usr/local/fsl/data/standard/MNI152_T1_2mm_brain.nii.gz -omat coreg2standard1.mat -bins 256 -cost corratio -searchrx -180 180 -searchry -180 180 -searchrz -180 180 -dof 12
 
 
 declare -a arr=("AP" "PA")
@@ -33,7 +35,7 @@ convert_xfm -omat standard2coreg"$i".mat -inverse coreg2standard"$i".mat
 
 
 # apply registration to kastner parcel(s)
-flirt -in $templatedir/kastner_v1lh_10.nii -ref "$i"_first_volume.nii -out ROI_to_"$i".nii -applyxfm -init standard2coreg"$i".mat -interp trilinear 
+flirt -in $templatedir/kastner_v1_10.nii -ref "$i"_first_volume.nii -out ROI_to_"$i".nii -applyxfm -init standard2coreg"$i".mat -interp trilinear 
 
 
 #binarize mask
@@ -41,6 +43,10 @@ fslmaths ROI_to_"$i".nii -bin ROI_to_"$i"_bin.nii
 
 done
 
+
+# Spot check
+fsleyes $outputdir/ROI_to_PA_bin.nii.gz
+fsleyes $outputdir/ROI_to_AP_bin.nii.gz
 
 
 

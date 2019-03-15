@@ -4,7 +4,7 @@
 %% Either edit these variables here, or input them each time.
 %subject = input('Subject number?','s');
 %run = input('Which run?','s');
-subject = 'TOME_3040_TEST';
+subject = 'TOME_3021_rtSim/rawDicomIncoming';
 run = '1';
 
 

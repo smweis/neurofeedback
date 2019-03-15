@@ -9,6 +9,7 @@ TR = 800;
 ntrials = 30;
 trialLength = 12000;
 
+figure;
 % Wrapper for all runs
 for i = 1:5
     % Change the acquisition direction name depending on even or odd
@@ -21,8 +22,15 @@ for i = 1:5
     stims = load(fullfile(subjectDirStem,subjectID,horzcat(subjectID,'_run',num2str(i)),horzcat('stimDataRun',num2str(i),'.mat')));
     
     [detrendTimeseries(i,:),stimParams(i,:)] = optimalFlickerAnalysisPreprocess(subjectID,subjectDirStem,i,runName);
-    [tfeParams(i,:),scaledBOLDresponse(i,:),watsonParams(i,:)] = optimalFlickerAnalysisTFE(detrendTimeseries(i,:),stimParams(i,:),TR,ntrials,trialLength);
+    [tfeParams,watsonParams(i,:)] = optimalFlickerAnalysisTFE(detrendTimeseries(i,:),stimParams,TR,ntrials,trialLength);
     
-
+    subplot(5,1,i);
+    semilogx(stims,detren,'b*');
+    hold on; semilogx(uniqueStims,meanBoldPerStim,'r*');
+    xlabel('Stimulus Frequency, log');
+    ylabel('Arbitrary units, relative activation');
+    semilogx(stimulusFreqHzFine,watsonTemporalModel(stimulusFreqHzFine,watsonParams),'-k');
+    legend('Individual trial data','Mean per freqHz','Best Watson fit');
+    hold off;
 end
 

@@ -25,7 +25,7 @@ bet $subject_dir/$newNifti $subject_dir/$newNifti
 # register first volume of old functional scan to new functional scan
 flirt -in $subject_dir/"$1"_first_volume.nii.gz -ref $subject_dir/$newNifti -omat $subject_dir/new2old"$1".mat -bins 256 -cost corratio -searchrx -180 180 -searchry -180 180 -searchrz -180 180 -dof 6
 
-# apply registration to kastner parcel(s)
+# apply registration to v1 parcel(s)
 flirt -in $subject_dir/ROI_to_"$1"_bin.nii.gz -ref $subject_dir/$newNifti -out $subject_dir/ROI_to_new"$1".nii.gz -applyxfm -init $subject_dir/new2old"$1".mat -interp trilinear
 
 #binarize mask again
