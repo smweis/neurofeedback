@@ -56,7 +56,7 @@ function [apOrPa,dirLengthAfterRegistration] = registerToFirstDicom(subject,subj
     else
         % If there's an sbref, set that image as the one to register
         reg_dicom = sbref;
-        
+        dirLengthAfterRegistration = 0;
     end
     
     
@@ -68,13 +68,19 @@ function [apOrPa,dirLengthAfterRegistration] = registerToFirstDicom(subject,subj
         
         % Create the directory on the local computer where the registered
         % images will go
-        reg_image_dir = strcat(subjectPath,filesep,'run', whichRun);
+        reg_image_dir = strcat(subjectPath,filesep,'processed',filesep,'run',whichRun);
+        mkdir(reg_image_dir);
         
         % convert the first DICOM to a NIFTI
-        dicm2nii(reg_dicom,reg_image_dir);
-        old_dicom_dir = dir(strcat(reg_image_dir,filesep,'*.nii.gz'));
-        old_dicom_name = old_dicom_dir.name;
-        old_dicom_folder = old_dicom_dir.folder;
+        if strcmp(reg_dicom,'dcm')
+            dicm2nii(reg_dicom,reg_image_dir);
+            old_dicom_dir = dir(strcat(reg_image_dir,filesep,'*.nii*'));
+            old_dicom_name = old_dicom_dir.name;
+            old_dicom_folder = old_dicom_dir.folder;
+        else
+            old_dicom_name = sbref;
+            old_dicom_folder = '';
+        end
         
         % Check if this is a PA sequence or an AP sequence (based on the
         % name of the acquisition). If neither, return empty string. 
@@ -89,13 +95,13 @@ function [apOrPa,dirLengthAfterRegistration] = registerToFirstDicom(subject,subj
         end
         
         
-        copyfile(fullfile(old_dicom_folder,old_dicom_name),strcat(subjectPath,filesep,'new',apOrPa,'.nii.gz'));
+        copyfile(fullfile(old_dicom_folder,old_dicom_name),strcat(reg_image_dir,filesep,'new',apOrPa,'.nii.gz'));
         
         % grab path to the bash script for registering to the new DICOM
         pathToRegistrationScript = fullfile(codePath,'registerEpiToEpi.sh');
         
         % run registration script name as: register_EPI_to_EPI.sh AP TOME_3040
-        cmdStr = [pathToRegistrationScript ' ' apOrPa ' ' subject];
+        cmdStr = [pathToRegistrationScript ' ' apOrPa ' ' subject ' run', whichRun];
         system(cmdStr);
         
         fprintf('Registration Complete. \n');

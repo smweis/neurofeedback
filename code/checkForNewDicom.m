@@ -46,7 +46,7 @@ function [acqTime,dataTimepoint,roiSignal,initialDirSize,dicomNames] = checkForN
 acqTime = datetime;
 
 % Check files in scannerPath.
-newDir = dir(scannerPath);
+newDir = dir(strcat(scannerPath,filesep,'*.dcm'));
 
 % If no new files, call the function again
 if length(newDir) == initialDirSize
