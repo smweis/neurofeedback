@@ -14,7 +14,7 @@ close all
 simulatedPsiParams = [];
 
 % How many trials to run?
-nTrials = 512;
+nTrials = 20;
 
 % How talkative is the simulation?
 showPlots = true;
