@@ -1,5 +1,6 @@
 % plot
 clear stimsAll;
+load('/Users/nfuser/Documents/rtQuest/TOME_3021_rtSim/processed/rtSimResults.mat');
 
 colors = ['g','b','r','c','m'];
 

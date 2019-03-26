@@ -1,10 +1,10 @@
-function [tfeParams,scaledBOLDresponse,watsonParams] = optimalFlickerAnalysisTFE(detrendTimeseries,stimParams,TR,nTrials,trialLength)
+function [tfeParams,scaledBOLDresponse,watsonParams] = flickerAnalysisTFE(detrendTimeseries,stimParams,TR,nTrials,trialLength)
 % Fit a timeseries of fMRI data using the TFE
 % In particular this code is built for fitting flicker using
 % watsonTemporalModel
 
 % Syntax:
-%  [tfeParams,scaledBOLDresponse,watsonParams] = optimalFlickerAnalysisTFE(detrendTimeseries,stimParams,TR,ntrials,trialLength)
+%  [tfeParams,scaledBOLDresponse,watsonParams] = flickerAnalysisTFE(detrendTimeseries,stimParams,TR,ntrials,trialLength)
 %
 % Description:
 %	

@@ -33,8 +33,8 @@ for i = 1:5
     
     stimParams(i) = load(fullfile(subjectDirStem,subjectIDStem,horzcat(subjectIDStem,'_run',num2str(i)),horzcat('stimDataRun',num2str(i),'.mat')));
     
-    [tfeParams(i,:),scaledBOLDresponse(i,:),watsonParams(i,:)] = optimalFlickerAnalysisTFE(detrendTimeseries(i,:),stimParams(i),TR,ntrials,trialLength);
+    [tfeParams(i,:),scaledBOLDresponse(i,:),watsonParams(i,:)] = flickerAnalysisTFE(detrendTimeseries(i,:),stimParams(i),TR,ntrials,trialLength);
     
 end
 
-
+save(fullfile(subjectDirStem,subjectID,'processed','rtSimResults.mat'));
