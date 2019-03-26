@@ -26,12 +26,12 @@ verbose = true;
 % Get the default Q+ params
 myQpParams = qpParams;
 
-% Add the stimulus domain. Log spaced frequencies between 2 and 64 Hz
-nStims = 24; 
-myQpParams.stimParamsDomainList = {logspace(log10(2),log10(64),nStims)};
+% Add the stimulus domain. Log spaced frequencies between ~2 and 30 Hz
+myQpParams.stimParamsDomainList = {[1.875,2.5,3.75,5,7.5,10,15,20,30]};
+nStims = length(myQpParams.stimParamsDomainList{1}); 
 
 % The number of outcome categories.
-myQpParams.nOutcomes = 31;
+myQpParams.nOutcomes = 51;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
