@@ -74,14 +74,17 @@ p.addParameter('verbose', false, @islogical);
 p.parse( tfeObj, thePacket, varargin{:});
 
 
+
+defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
+
 %% Test if we are in simulate mode
 if isempty(thePacket.response)
     
-    defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
     params0 = tfeObj.defaultParams('defaultParamsInfo', defaultParamsInfo);
     params0.noiseSd = 0.02;
     params0.noiseInverseFrequencyPower = 1;
     
+    modelAmplitudeBin = zeros(length(p.Results.stimulusVec),1);
     % Here we go from frequency -> bins
     for ii = 1:length(p.Results.stimulusVec)
         modelAmplitudeBin(ii) = p.Results.qpParams.qpOutcomeF(p.Results.stimulusVec(ii));
@@ -108,6 +111,12 @@ params = tfeObj.fitResponse(thePacket,...
 
 % Then turn that BOLD% signal into bins. 
 binOutput = boldToBin(params.paramMainMatrix,p.Results.qpParams.nOutcomes,p.Results.boldLimits)';
+
+
+
+
+
+
 
 
     function pctBOLD = binToBold(observedBins,nBins,boldLimits)
