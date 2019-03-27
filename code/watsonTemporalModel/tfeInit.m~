@@ -34,7 +34,7 @@ p = inputParser;
 p.addParameter('nTrials', 25, @isscalar);
 p.addParameter('trialLengthSecs', 12, @isscalar);
 p.addParameter('baselineTrialRate', 6, @isscalar);
-p.addParameter('stimulusStructDeltaT',100,@isnumeric);
+p.addParameter('stimulus
 p.addParameter('verbose', false, @islogical);
 
 % Parse and check the parameters
@@ -45,7 +45,7 @@ tfeObj = tfeIAMP('verbosity','none');
 
 
 %% Temporal domain of the stimulus
-deltaT = p.Results.stimulusStructDeltaT; % in msecs
+deltaT = 100; % in msecs
 totalTime = p.Results.nTrials*p.Results.trialLengthSecs*1000; % in msecs.
 eventDuration = p.Results.trialLengthSecs*1000; % block duration in msecs
 

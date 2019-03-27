@@ -1,4 +1,4 @@
-%% demonstration of QP applied to Watson TTF fit to BOLD fMRI data
+%% QP + Watson TTF + TFE
 
 % Clean up
 clearvars
@@ -13,8 +13,22 @@ close all
 %  A band-pass TTF in noisy fMRI data: [1.47 1.75 0.83 1]
 simulatedPsiParams = [];
 
-% How many trials to run?
-nTrials = 20;
+
+% Some information about the trials?
+nTrials = 80; % how many trials
+trialLengthSecs = 12; % seconds per trial
+baselineTrialRate = 6; % present a gray screen (baseline trial) every X trials
+stimulusStructDeltaT = 100; % the resolution of the stimulus struct in msecs
+
+% Use this for calculating the stim struct resolution
+stimulusStructPerTrial = trialLengthSecs * 1000 / stimulusStructDeltaT;
+
+% Initialize tfeObj
+[tfeObj, thePacket] = tfeInit('nTrials',nTrials,...,
+                              'trialLengthSecs',trialLengthSecs,...,
+                              'baselineTrialRate',baselineTrialRate,...,
+                              'stimulusStructDeltaT',stimulusStructDeltaT);
+
 
 % How talkative is the simulation?
 showPlots = true;
@@ -109,25 +123,41 @@ if showPlots
     ylabel('Entropy');
 end
 
+
+nonBaselineTrials = 0;
+thePacketCopy = thePacket;
 %% Run simulated trials
 for tt = 1:nTrials
+    
+    if mod(tt,baselineTrialRate) ~= 1
+        
+        nonBaselineTrials = nonBaselineTrials + 1;
+        
+        % Get stimulus for this trial
+        stim(nonBaselineTrials) = qpQuery(questData);
 
-    % Get stimulus for this trial
-    stim = qpQuery(questData);
+        % Update the stimulus struct to be just the current trials.
+        thePacket.stimulus.values = thePacketCopy.stimulus.values(1:nonBaselineTrials,1:tt*stimulusStructPerTrial);
+        thePacket.stimulus.timebase = thePacketCopy.stimulus.timebase(:,1:tt*stimulusStructPerTrial);
+        % Simulate outcome with tfe
+        outcome = tfeUpdate(tfeObj,thePacket,'stimulusVec',stim,'qpParams',myQpParams);
     
-    % Simulate outcome
-    outcome = myQpParams.qpOutcomeF(stim);
+        % Update quest data structure
+        questData = qpUpdate(questData,stim(nonBaselineTrials),outcome(nonBaselineTrials)); 
     
-    % Update quest data structure
-    questData = qpUpdate(questData,stim,outcome); 
+    end
+        
+        
+        
     
     % Update the plot
-    if showPlots
+    if nonBaselineTrials > 0 && showPlots
         
         % Current guess at the TTF, along with stims and outcomes
-        yOutcome = ((outcome-nLower)/nMid)-(1/myQpParams.nOutcomes)/2;
+        %% THIS IS BROKEN AT THE MOMENT BECAUSE I'M NOT SURE HOW TO GO FROM BINS -> BOLD
+        yOutcome = ((outcome(nonBaselineTrials)-nLower)/nMid)-(1/myQpParams.nOutcomes)/2;
         subplot(2,1,1)
-        scatter(stim,yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
+        scatter(stim(nonBaselineTrials),yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
         delete(currentFuncHandle)
@@ -136,7 +166,7 @@ for tt = 1:nTrials
         % Entropy plot
         subplot(2,1,2)
         delete(currentEntropyHandle)
-        entropyAfterTrial(1:tt)=questData.entropyAfterTrial;
+        entropyAfterTrial(1:nonBaselineTrials)=questData.entropyAfterTrial;
         plot(1:nTrials,entropyAfterTrial,'*k');
         xlim([1 nTrials]);
         ylim([0 nanmax(entropyAfterTrial)]);
