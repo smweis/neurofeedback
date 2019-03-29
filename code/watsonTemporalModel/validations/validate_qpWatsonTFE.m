@@ -156,6 +156,7 @@ for tt = 1:nTrials
         % Current guess at the TTF, along with stims and outcomes
         %% THIS IS BROKEN AT THE MOMENT BECAUSE I'M NOT SURE HOW TO GO FROM BINS -> BOLD
         yOutcome = ((outcome(nonBaselineTrials)-nLower)/nMid)-(1/myQpParams.nOutcomes)/2;
+        
         subplot(2,1,1)
         scatter(stim(nonBaselineTrials),yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
