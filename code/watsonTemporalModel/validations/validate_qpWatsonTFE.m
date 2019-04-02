@@ -1,8 +1,18 @@
 %% QP + Watson TTF + TFE
 
+
+%% Are we debugging?
+debugFlag = 1;
+
 % Clean up
-clearvars
-close all
+if debugFlag
+    clearvars('-except','questDataCopy','debugFlag');
+    close all;
+else
+    clearvars;
+    close all;
+end
+
 
 
 %% Define the veridical model params
@@ -83,8 +93,19 @@ if verbose
     fprintf('Initializing Q+. This may take a minute...\n');
 end
 
-% Initialize Q+
-questData = qpInitialize(myQpParams);
+% Initialize Q+. Save some time if we're debugging
+
+if debugFlag
+    if exist('questDataCopy','var')
+        questData = questDataCopy;
+    else
+        questData = qpInitialize(myQpParams);
+        questDataCopy = questData;
+    end
+end
+
+
+
 
 % Prompt the user we to start the simulation
 if verbose
@@ -122,18 +143,23 @@ if showPlots
 
     % Calculate the lower headroom bin offset. We'll use this later
     nLower = round(headroom(1)*myQpParams.nOutcomes);
-    nUpper = round(headroom(1)*myQpParams.nOutcomes);
+    nUpper = round(headroom(2)*myQpParams.nOutcomes);
     nMid = myQpParams.nOutcomes - nLower - nUpper;
+    
+    % Calculate how many non baseline trials there will be. 
+    nNonBaselineTrials = nTrials - ceil(nTrials/baselineTrialRate);
+
     
     % Set up the entropy x trial figure
     subplot(3,1,3)
-    entropyAfterTrial = nan(1,nTrials);
-    currentEntropyHandle = plot(1:nTrials,entropyAfterTrial,'*k');
-    xlim([1 nTrials]);
+    entropyAfterTrial = nan(1,nNonBaselineTrials);
+    currentEntropyHandle = plot(1:nNonBaselineTrials,entropyAfterTrial,'*k');
+    xlim([1 nNonBaselineTrials]);
     title('Model entropy by trial number');
     xlabel('Trial number');
     ylabel('Entropy');
 end
+
 
 
 nonBaselineTrials = 0;
@@ -166,8 +192,8 @@ for tt = 1:nTrials
     if nonBaselineTrials > 0 && showPlots
         
         % Current guess at the TTF, along with stims and outcomes
-        %% THIS IS BROKEN AT THE MOMENT BECAUSE I'M NOT SURE HOW TO GO FROM BINS -> BOLD
-        yOutcome = ((outcome(nonBaselineTrials)-nLower)/nMid)-(1/myQpParams.nOutcomes)/2;
+        %% THIS IS BROKEN AT THE MOMENT BECAUSE I'M NOT SURE HOW TO GO FROM BINS BOLD
+        yOutcome = ((outcome(nonBaselineTrials)-nLower)/nMid)-(1/myQpParams.nOutcomes/2);
 
         % Simulated BOLD fMRI time-series and fit       
         subplot(3,1,1)
@@ -189,8 +215,8 @@ for tt = 1:nTrials
         subplot(3,1,3)
         delete(currentEntropyHandle)
         entropyAfterTrial(1:nonBaselineTrials)=questData.entropyAfterTrial;
-        plot(1:nTrials,entropyAfterTrial,'*k');
-        xlim([1 nTrials]);
+        plot(1:nNonBaselineTrials,entropyAfterTrial,'*k');
+        xlim([1 nNonBaselineTrials]);
         ylim([0 nanmax(entropyAfterTrial)]);
         xlabel('Trial number');
         ylabel('Entropy');

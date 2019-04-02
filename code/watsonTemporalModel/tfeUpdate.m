@@ -77,7 +77,7 @@ p.addParameter('qpParams',[],@isstruct);
 p.addParameter('headroom', [], @isnumeric);
 p.addParameter('stimulusVec', [], @isnumeric);
 p.addParameter('boldLimits', [-2,3], @isnumeric);
-p.addParameter('noiseSD',0.25, @isscalar);
+p.addParameter('noiseSD',.25, @isscalar);
 p.addParameter('pinkNoise',1, @isnumeric);
 p.addParameter('TRmsecs',800, @isnumeric);
 p.addParameter('verbose', false, @islogical);
@@ -164,7 +164,12 @@ function pctBOLD = binToBold(observedBins,nBins,boldLimits)
 % boldLimits   - 2 x 1 vector of min and max possible BOLD percent
 %                   signal changes
 
-boldBins = linspace(boldLimits(1),boldLimits(2),nBins);
+if observedBins > nBins
+    error('An observed bin falls outside the number of possible bins.');
+end
+
+
+boldBins = linspace(min(boldLimits),max(boldLimits),nBins);
 pctBOLD = boldBins(observedBins);
 
 end
@@ -179,7 +184,15 @@ function binOutput = boldToBin(pctBOLD,nBins,boldLimits)
 % boldLimits   - 2 x 1 vector of min and max possible BOLD percent
 %                   signal changes
 
-boldBins = linspace(boldLimits(1),boldLimits(2),nBins);
+
+% If pctBOLD falls outside of the bold limit range, set it equal to the 
+% maximum (or minimum) possible bold limit. 
+pctBOLD(pctBOLD > max(boldLimits)) = max(boldLimits);
+pctBOLD(pctBOLD < min(boldLimits)) = min(boldLimits);
+
+
+
+boldBins = linspace(min(boldLimits),max(boldLimits),nBins);
 binOutput = discretize(pctBOLD,boldBins);
 
 end
