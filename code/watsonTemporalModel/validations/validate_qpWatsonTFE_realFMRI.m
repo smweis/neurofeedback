@@ -164,6 +164,12 @@ end
 
 nonBaselineTrials = 0;
 thePacketOrig = thePacket;
+
+
+%% Test this with just run 1 first;
+
+
+
 %% Run simulated trials
 for tt = 1:nTrials
     
@@ -177,8 +183,9 @@ for tt = 1:nTrials
         % Update the stimulus struct to be just the current trials.
         thePacket.stimulus.values = thePacketOrig.stimulus.values(1:nonBaselineTrials,1:tt*stimulusStructPerTrial);
         thePacket.stimulus.timebase = thePacketOrig.stimulus.timebase(:,1:tt*stimulusStructPerTrial);
+        
         % Simulate outcome with tfe
-        [outcome, modelResponseStruct, thePacketOut]  = tfeUpdate(tfeObj,thePacket,'stimulusVec',stim,'qpParams',myQpParams);
+        [outcome, modelResponseStruct, thePacketOut]  = tfeUpdate(tfeObj,thePacket);
     
         % Update quest data structure
         questData = qpUpdate(questData,stim(nonBaselineTrials),outcome(nonBaselineTrials)); 
