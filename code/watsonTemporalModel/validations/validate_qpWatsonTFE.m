@@ -63,10 +63,10 @@ beta = 0.8:0.1:1.1; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.5:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
-% Pick some random params to simulate if none provided (but insist on some
-% noise)
+% Pick some random params to simulate if none provided (but set the neural
+% noise to zero)
 if isempty(simulatedPsiParams)
-    simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) randsample(beta,1) 1];
+    simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) randsample(beta,1) 0];
 end
 
 % Derive some lower and upper bounds from the parameter ranges. This is
@@ -96,9 +96,21 @@ end
 
 % Create a plot in which we can track the model progress
 if showPlots
-    % Set up the TTF figure
     figure
-    subplot(2,1,1)
+
+    % Set up the BOLD fMRI response and model fit
+    subplot(3,1,1)
+    currentBOLDHandleData = plot(thePacket.stimulus.timebase,zeros(size(thePacket.stimulus.timebase)),'-k');
+    hold on
+    currentBOLDHandleFit = plot(thePacket.stimulus.timebase,zeros(size(thePacket.stimulus.timebase)),'-r');
+    xlim([min(thePacket.stimulus.timebase) max(thePacket.stimulus.timebase)]);
+    ylim([-2 3]);    
+    xlabel('time [msecs]');
+    ylabel('BOLD fMRI % change');
+    title('BOLD fMRI data');
+    
+    % Set up the TTF figure
+    subplot(3,1,2)
     freqDomain = logspace(0,log10(100),100);
     semilogx(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-1)),'-k');
     ylim([-0.5 1.5]);
@@ -114,7 +126,7 @@ if showPlots
     nMid = myQpParams.nOutcomes - nLower - nUpper;
     
     % Set up the entropy x trial figure
-    subplot(2,1,2)
+    subplot(3,1,3)
     entropyAfterTrial = nan(1,nTrials);
     currentEntropyHandle = plot(1:nTrials,entropyAfterTrial,'*k');
     xlim([1 nTrials]);
@@ -125,7 +137,7 @@ end
 
 
 nonBaselineTrials = 0;
-thePacketCopy = thePacket;
+thePacketOrig = thePacket;
 %% Run simulated trials
 for tt = 1:nTrials
     
@@ -137,10 +149,10 @@ for tt = 1:nTrials
         stim(nonBaselineTrials) = qpQuery(questData);
 
         % Update the stimulus struct to be just the current trials.
-        thePacket.stimulus.values = thePacketCopy.stimulus.values(1:nonBaselineTrials,1:tt*stimulusStructPerTrial);
-        thePacket.stimulus.timebase = thePacketCopy.stimulus.timebase(:,1:tt*stimulusStructPerTrial);
+        thePacket.stimulus.values = thePacketOrig.stimulus.values(1:nonBaselineTrials,1:tt*stimulusStructPerTrial);
+        thePacket.stimulus.timebase = thePacketOrig.stimulus.timebase(:,1:tt*stimulusStructPerTrial);
         % Simulate outcome with tfe
-        outcome = tfeUpdate(tfeObj,thePacket,'stimulusVec',stim,'qpParams',myQpParams);
+        [outcome, modelResponseStruct, thePacketOut]  = tfeUpdate(tfeObj,thePacket,'stimulusVec',stim,'qpParams',myQpParams);
     
         % Update quest data structure
         questData = qpUpdate(questData,stim(nonBaselineTrials),outcome(nonBaselineTrials)); 
@@ -156,16 +168,25 @@ for tt = 1:nTrials
         % Current guess at the TTF, along with stims and outcomes
         %% THIS IS BROKEN AT THE MOMENT BECAUSE I'M NOT SURE HOW TO GO FROM BINS -> BOLD
         yOutcome = ((outcome(nonBaselineTrials)-nLower)/nMid)-(1/myQpParams.nOutcomes)/2;
+
+        % Simulated BOLD fMRI time-series and fit       
+        subplot(3,1,1)
+        delete(currentBOLDHandleData)
+        delete(currentBOLDHandleFit)
+        currentBOLDHandleData = plot(thePacketOut.response.timebase,thePacketOut.response.values,'.k');
+        currentBOLDHandleFit = plot(modelResponseStruct.timebase,modelResponseStruct.values,'-r');
         
-        subplot(2,1,1)
+        
+        % TTF figure
+        subplot(3,1,2)
         scatter(stim(nonBaselineTrials),yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
         delete(currentFuncHandle)
         currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest(1:end-1)),'-r');
 
-        % Entropy plot
-        subplot(2,1,2)
+        % Entropy by trial
+        subplot(3,1,3)
         delete(currentEntropyHandle)
         entropyAfterTrial(1:nonBaselineTrials)=questData.entropyAfterTrial;
         plot(1:nTrials,entropyAfterTrial,'*k');

@@ -1,16 +1,16 @@
-function [binOutput] = tfeUpdate(tfeObj, thePacket, varargin)
+function [binOutput, modelResponseStruct, thePacket] = tfeUpdate(tfeObj, thePacket, varargin)
 % Takes in the tfeObject created with tfeInit along with thePacket. If
-% thePacket.response is empty, will 
+% thePacket.response is empty, will
 %
 % Syntax:
 %  [tfeObj, thePacket] = tfeInit(, varargin)
 %
 % Description:
-%	
+%
 %
 % Inputs:
 %   tfeObj         - temporal fitting engine object created using tfeInit
-%   thePacket      - struct for input into tfe, containing stimulus and kernel 
+%   thePacket      - struct for input into tfe, containing stimulus and kernel
 %                    values and timespace.
 %                    size(thePacket.stimulus.values,1) = nNonBaselineTrials
 %
@@ -77,8 +77,9 @@ p.addParameter('qpParams',[],@isstruct);
 p.addParameter('headroom', [], @isnumeric);
 p.addParameter('stimulusVec', [], @isnumeric);
 p.addParameter('boldLimits', [-2,3], @isnumeric);
-p.addParameter('noiseSD',.02, @isscalar);
+p.addParameter('noiseSD',0.25, @isscalar);
 p.addParameter('pinkNoise',1, @isnumeric);
+p.addParameter('TRmsecs',800, @isnumeric);
 p.addParameter('verbose', false, @islogical);
 
 % Parse and check the parameters
@@ -90,11 +91,11 @@ defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
 
 %% Test if we are in simulate mode
 % If we are in simulate mode, we need to have the temporal fitting engine
-% generate the parameter estimates based on the qpWatsonTemporalModel 
-% expected bins (based on the stimulus frequencies in stimulusVec). 
+% generate the parameter estimates based on the qpWatsonTemporalModel
+% expected bins (based on the stimulus frequencies in stimulusVec).
 
 if isempty(thePacket.response)
-    % If we're in simulation mode, we need a stimulus vector of frequencies. 
+    % If we're in simulation mode, we need a stimulus vector of frequencies.
     if isempty(p.Results.stimulusVec)
         error('No timeseries (thePacket.reponse is empty) and no stimulusVec.')
     end
@@ -107,7 +108,7 @@ if isempty(thePacket.response)
     % Initialize params0, which will allow us to create the forward model.
     params0 = tfeObj.defaultParams('defaultParamsInfo', defaultParamsInfo);
     params0.noiseSd = p.Results.noiseSD;
-    params0.noiseInverseFrequencyPower = p.Results.pinkNoise; 
+    params0.noiseInverseFrequencyPower = p.Results.pinkNoise;
     modelAmplitudeBin = zeros(length(p.Results.stimulusVec),1);
     
     % Here we go from stimulus frequency -> bins (what qpOutcomeF returns)
@@ -119,63 +120,67 @@ if isempty(thePacket.response)
     %                                       the bin that value is in.)
     params0.paramMainMatrix = binToBold(modelAmplitudeBin,p.Results.qpParams.nOutcomes,p.Results.boldLimits)';
     
-    % Estimate the response amplitude from the BOLD% signal
+    % Estimate the response amplitude from the BOLD% signal. Lock the
+    % MATLAB random number generator to give us the same BOLD noise on
+    % every iteration.
+    rng(1);
     thePacket.response = tfeObj.computeResponse(params0,thePacket.stimulus,thePacket.kernel,'AddNoise',true);
-
+    
+    % Resample the response to the BOLD fMRI TR
+    BOLDtimebase = min(thePacket.response.timebase):p.Results.TRmsecs:max(thePacket.response.timebase);
+    thePacket.response= tfeObj.resampleTimebase(thePacket.response,BOLDtimebase);
+    
 end
 
 %% Fit the response struct with the IAMP model
 % Note, if we skipped simulation mode, this means we have a response struct
-% in thePacket and we can estimate the parameters directly. 
+% in thePacket and we can estimate the parameters directly.
 %
 % If we did not skip simulation mode, the response struct was created above
-% using the stimulus frequencies passed through stimulusVec. 
+% using the stimulus frequencies passed through stimulusVec.
 
 
 % We fit the timeseries to create a list of parameters, which are
-% in % BOLD signal. 
+% in % BOLD signal.
 
-params = tfeObj.fitResponse(thePacket,...
-            'defaultParamsInfo', defaultParamsInfo, ...
-            'searchMethod','linearRegression');
+[params,fVal,modelResponseStruct] = tfeObj.fitResponse(thePacket,...
+    'defaultParamsInfo', defaultParamsInfo, ...
+    'searchMethod','linearRegression');
 
-% Then turn that BOLD% signal into bins. 
+% Then turn that BOLD% signal into bins.
 binOutput = boldToBin(params.paramMainMatrix,p.Results.qpParams.nOutcomes,p.Results.boldLimits)';
 
+end % main function
 
 
 
 
+function pctBOLD = binToBold(observedBins,nBins,boldLimits)
+% Convert a set of bin numbers to percent BOLD signals
+%
+% Inputs:
+% observedBins - n x 1 vector of bin numbers
+% nBins        - integer, number of possible bins
+% boldLimits   - 2 x 1 vector of min and max possible BOLD percent
+%                   signal changes
 
-
-
-    function pctBOLD = binToBold(observedBins,nBins,boldLimits)
-        % Convert a set of bin numbers to percent BOLD signals
-        % 
-        % Inputs:
-        % observedBins - n x 1 vector of bin numbers 
-        % nBins        - integer, number of possible bins
-        % boldLimits   - 2 x 1 vector of min and max possible BOLD percent
-        %                   signal changes
-
-        boldBins = linspace(boldLimits(1),boldLimits(2),nBins);
-        pctBOLD = boldBins(observedBins);
-        
-    end
-
-
-    function binOutput = boldToBin(pctBOLD,nBins,boldLimits)
-        % Convert a set of bin numbers to percent BOLD signals
-        % 
-        % Inputs:
-        % pctBold      - n x 1 vector of scalars
-        % nBins        - integer, number of possible bins
-        % boldLimits   - 2 x 1 vector of min and max possible BOLD percent
-        %                   signal changes
-
-        boldBins = linspace(boldLimits(1),boldLimits(2),nBins);
-        binOutput = discretize(pctBOLD,boldBins);
-        
-    end
+boldBins = linspace(boldLimits(1),boldLimits(2),nBins);
+pctBOLD = boldBins(observedBins);
 
 end
+
+
+function binOutput = boldToBin(pctBOLD,nBins,boldLimits)
+% Convert a set of bin numbers to percent BOLD signals
+%
+% Inputs:
+% pctBold      - n x 1 vector of scalars
+% nBins        - integer, number of possible bins
+% boldLimits   - 2 x 1 vector of min and max possible BOLD percent
+%                   signal changes
+
+boldBins = linspace(boldLimits(1),boldLimits(2),nBins);
+binOutput = discretize(pctBOLD,boldBins);
+
+end
+
