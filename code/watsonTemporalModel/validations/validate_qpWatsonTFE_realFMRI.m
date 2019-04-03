@@ -18,11 +18,17 @@ end
 %% Load in fMRI + stim frequency data and create tfeObj and thePacket
 
 
-% Let's do this with run 1 for now. 
-runNum = 2;
+% Let's do this with 1 run for now. 
+runNum = 2; % possible values: ints 1-5
 
 % Where is stimulus data?
+% Optimal results
 stimDataLoc = ['processed_fmri_data', filesep, 'optimalResults.mat'];
+
+% Real-time pipline results
+% stimDataLoc = ['processed_fmri_data', filesep, 'rtSimResults.mat'];
+
+
 load(stimDataLoc);
 
 % Create the stimulus vec (with no zero trials)
@@ -192,14 +198,22 @@ for tt = 1:nTrials
         thePacket.response.timebase = thePacketOrig.response.timebase(:,1:tt*responseStructPerTrial);
         % Simulate outcome with tfe
 
-        [outcome, modelResponseStruct, thePacketOut, pctBOLDresponse]  = tfeUpdate(tfeObj,thePacket,'qpParams',myQpParams,'boldLimits',[-.5,1]);
+        [outcome, modelResponseStruct, thePacketOut, pctBOLDresponse]  = tfeUpdate(tfeObj,thePacket,'qpParams',myQpParams);
 
         % Update quest data structure
         questData = qpUpdate(questData,stim(nonBaselineTrials),outcome(nonBaselineTrials)); 
 
+        
+        
+        % This is a lot of code to try to fit the data to obtain watson
+        % parameters for plotting. We end up fitting the average of each
+        % stimulus frequency across all presentations of that frequency. 
+        
+        % Only works with more than 1 trial of data
         if nonBaselineTrials > 2
             pctBOLDresponse = pctBOLDresponse';
             minBOLD = min(pctBOLDresponse);
+            % scale the BOLD response
             if minBOLD < 0
                 scaledBOLDresponse = pctBOLDresponse - minBOLD;
             else
