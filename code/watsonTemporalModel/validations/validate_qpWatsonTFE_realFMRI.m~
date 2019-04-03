@@ -19,7 +19,7 @@ end
 
 
 % Let's do this with run 1 for now. 
-runNum = 2;
+runNum = 1;
 
 % Where is stimulus data?
 stimDataLoc = ['processed_fmri_data', filesep, 'optimalResults.mat'];
@@ -53,15 +53,14 @@ thePacket.response.values = detrendTimeseries(runNum,:);
 responseTimebaseLength = length(thePacket.stimulus.timebase)/(boldTRmsecs/stimulusStructDeltaT);
 thePacket.response.timebase = linspace(0,(responseTimebaseLength-1)*boldTRmsecs,responseTimebaseLength);
 
-% We'll see how quickly we can converge on the full model
-watsonParams = watsonParams(runNum,:);
 
 % How talkative is the simulation?
 showPlots = true;
-verbose = true;
+verbose = false;
 
-options = optimoptions(@fmincon,'Display', 'off');
-
+if ~verbose
+    options = optimoptions(@fmincon,'Display', 'off');
+end
 
 %% Set up Q+
 
@@ -91,6 +90,11 @@ beta = 0.8:0.1:1.1; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.5:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
+% Pick some random params to simulate if none provided (but set the neural
+% noise to zero)
+
+simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) randsample(beta,1) 0];
+
 
 % Derive some lower and upper bounds from the parameter ranges. This is
 % used later in maximum likelihood fitting
@@ -98,7 +102,7 @@ lowerBounds = [tau(1) kappa(1) zeta(1) beta(1) sigma(1)];
 upperBounds = [tau(end) kappa(end) zeta(end) beta(end) sigma(end)];
 
 % Create a simulated observer
-myQpParams.qpOutcomeF = @(f) qpSimulatedObserver(f,myQpParams.qpPF,watsonParams);
+myQpParams.qpOutcomeF = @(f) qpSimulatedObserver(f,myQpParams.qpPF,simulatedPsiParams);
 
 % Warn the user that we are initializing
 if verbose
@@ -146,13 +150,12 @@ if showPlots
     % Set up the TTF figure
     subplot(2,1,2)
     freqDomain = logspace(0,log10(100),100);
-    semilogx(freqDomain,watsonTemporalModel(freqDomain,watsonParams),'-k');
     ylim([-0.5 1.5]);
     xlabel('log stimulus Frequency [Hz]');
     ylabel('Relative response amplitude');
     title('Estimate of Watson TTF');
     hold on
-    currentFuncHandle = semilogx(freqDomain,watsonTemporalModel(freqDomain,watsonParams),'-k');
+    currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-1)),'-k');
 
     % Calculate the lower headroom bin offset. We'll use this later
     nLower = round(headroom(1)*myQpParams.nOutcomes);

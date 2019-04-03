@@ -131,7 +131,7 @@ meanBoldPerStim = meanBoldPerStim ./ splineInterpolatedMax;
 scaledBOLDresponse = scaledBOLDresponse ./splineInterpolatedMax;
 myObj = @(p) sqrt(sum((meanBoldPerStim-watsonTemporalModel(uniqueStims,p)).^2));
 x0 = [2 2 2];
-watsonParams = fmincon(myObj,x0);
+watsonParams = fmincon(myObj,x0,'Display','off');
 
 end
 

@@ -1,19 +1,29 @@
 function [tfeObj, thePacket] = tfeInit(varargin)
-% My description
+% Returns an initiated tfeObject and thePacket for use with tfeUpdate
 %
 % Syntax:
-%  [tfeObj, thePacket] = tfeInit(, varargin)
+%  [tfeObj, thePacket] = tfeInit(varargin)
 %
 % Description:
-%	.
+%	Generates a stimulusStruct and kernelStruct based on optional inputs
+%	and prepares tfeObj and thePacket for use with tfeUpdate. 
 %
 % Inputs:
-%   sceneGeometry         - Structure. SEE: createSceneGeometry
+%   tfeObj         - temporal fitting engine object created using tfeInit
+%   thePacket      - struct for input into tfe, containing stimulus and kernel
+%                    values and timespace.
 %
 % Optional key/value pairs:
-%  'eyePoseLB/UB'         - A 1x4 vector that provides the lower (upper)
-
-%
+%   'nTrials'               - How many trials (including baseline trials)
+%                             Default - 25
+%   'trialLengthSecs'       - How long is each trial
+%                             Default - 12
+%   'baselineTrialRate'     - How often should a baseline trial occur (every X trials)
+%                             Default - 6
+%   'stimulusStructDeltaT'  - The resolution of the stimulus struct in msecs
+%                             Default - 100
+%   'verbose'               - How talkative. 
+%                             Default - False
 % Outputs:
 %   tfeObj               - Object handle
 %   thePacket            - Structure.

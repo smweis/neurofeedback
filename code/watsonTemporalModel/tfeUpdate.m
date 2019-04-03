@@ -1,9 +1,10 @@
-function [binOutput, modelResponseStruct, thePacket] = tfeUpdate(tfeObj, thePacket, varargin)
+function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj, thePacket, varargin)
 % Takes in the tfeObject created with tfeInit along with thePacket. If
-% thePacket.response is empty, will
+% thePacket.response is empty, will simulate an fMRI signal, fit that
+% signal, and return outputs suitable for use with Quest +. 
 %
 % Syntax:
-%  [tfeObj, thePacket] = tfeInit(, varargin)
+%  [binOutput, modelResponseStruct, thePacket] = tfeUpdate(tfeObj, thePacket, varargin)
 %
 % Description:
 %
@@ -12,15 +13,37 @@ function [binOutput, modelResponseStruct, thePacket] = tfeUpdate(tfeObj, thePack
 %   tfeObj         - temporal fitting engine object created using tfeInit
 %   thePacket      - struct for input into tfe, containing stimulus and kernel
 %                    values and timespace.
-%                    size(thePacket.stimulus.values,1) = nNonBaselineTrials
 %
 % Optional key/value pairs:
-%  'eyePoseLB/UB'         - A 1x4 vector that provides the lower (upper)
-
-%
+%   'qpParams'     - A struct generated from qpParams. This should contain
+%                    a value for nOutcomes other than the default (2) to
+%                    ensure enough range of values for Q+ to work with. 
+%   'headroom'     - 2x1 vector specifying what proportion of the nOutcomes 
+%                    from qpParams will be used as extra on top and bottom. 
+%                    Default - [0.1 0.3]
+%   'stimulusVec'  - If simulation mode, a vector of stimulus frequencies
+%   'boldLimits'   - The upper and lower values of percent change for the 
+%                    BOLD signal. These should be well above and below what
+%                    you think the dynamic range should be. 
+%                    Default - [-2,3]
+%   'noiseSD'      - How many standard deviations of noise should TFE use 
+%                    to simulate neural data. 
+%                    Default - .25
+%   'pinkNoise'    - Logical, whether or not to include 1/f noise in the TFE
+%                    simulation. 
+%                    Default - 1 (true)
+%   'TRmsecs'      - If in simulation mode, how to downsample the simulated
+%                    BOLD signal so that the response.values struct has 
+%                    one value per TR. 
+%                    Default - 800
+%   'verbose'      - How talkative. 
+%                    Default - False
+% 
 % Outputs:
-%   binOutput      - nNoneBaselineTrials x 1 vector of integers referring to the bins
-%                    that each stimulus generates
+%   binOutput           - nNoneBaselineTrials x 1 vector of integers referring to the bins
+%                         that each stimulus generates
+%   modelResponseStruct - The simulated response struct from tfe method fitResponse
+%   thePacket           - The updated packet with response struct completed.
 %
 % Examples:
 %{
@@ -56,13 +79,16 @@ function [binOutput, modelResponseStruct, thePacket] = tfeUpdate(tfeObj, thePack
     % Generate a random stimulus vector
     stimulusVec = randsample([1.875,2.5,3.75,5,7.5,10,15,20,30],nNonBaselineTrials,true);
     
-    [binOutput] = tfeUpdate(tfeObj, thePacket, 'qpParams', myQpParams, 'headroom', headroom, 'stimulusVec',stimulusVec)
+    [binOutput, modelResponseStruct, thePacketOut] = tfeUpdate(tfeObj, thePacket, 'qpParams', myQpParams, 'headroom', headroom, 'stimulusVec',stimulusVec);
 
 
     
 
 %}
 
+
+
+%% Begin function
 
 %% Parse input
 p = inputParser;
@@ -72,7 +98,6 @@ p.addRequired('tfeObj',@isobject);
 p.addRequired('thePacket',@isstruct);
 
 % Optional params
-%p.addParameter('qpOutcomeF', [], @(x)(isempty(x) | isa(x,'function_handle')));
 p.addParameter('qpParams',[],@isstruct);
 p.addParameter('headroom', [], @isnumeric);
 p.addParameter('stimulusVec', [], @isnumeric);
@@ -86,8 +111,12 @@ p.addParameter('verbose', false, @islogical);
 p.parse( tfeObj, thePacket, varargin{:});
 
 
-
+% Set a default params value based on how many stimulus values there should
+% have been (which is based on the number of rows in the stimulus.values
+% struct)
 defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
+
+
 
 %% Test if we are in simulate mode
 % If we are in simulate mode, we need to have the temporal fitting engine
@@ -149,6 +178,7 @@ end
 
 % Then turn that BOLD% signal into bins.
 binOutput = boldToBin(params.paramMainMatrix,p.Results.qpParams.nOutcomes,p.Results.boldLimits)';
+pctBOLD = params.paramMainMatrix;
 
 end % main function
 
