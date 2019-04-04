@@ -35,7 +35,7 @@ myQpParams.nOutcomes = 51;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
-headroom = [0.1 0.3];
+headroom = 0.1;
 
 % Create an anonymous function from qpWatsonTemporalModel in which we
 % specify the number of outcomes for the y-axis response
@@ -45,7 +45,7 @@ myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom
 tau = 0.5:0.5:8;	% time constant of the center filter (in msecs)
 kappa = 0.5:0.25:2;	% multiplier of the time-constant for the surround
 zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
-beta = 0.8:0.1:1.1; % multiplier that maps watson 0-1 to BOLD % bins
+beta = 0.6:0.1:1; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.5:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
@@ -92,11 +92,11 @@ if showPlots
     ylabel('Relative response amplitude');
     title('Estimate of Watson TTF');
     hold on
-    currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-1)),'-k');
+    currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:3)),'-k');
 
     % Calculate the lower headroom bin offset. We'll use this later
-    nLower = round(headroom(1)*myQpParams.nOutcomes);
-    nUpper = round(headroom(1)*myQpParams.nOutcomes);
+    nLower = round(headroom*myQpParams.nOutcomes);
+    nUpper = round(headroom*myQpParams.nOutcomes);
     nMid = myQpParams.nOutcomes - nLower - nUpper;
     
     % Set up the entropy x trial figure
@@ -131,7 +131,7 @@ for tt = 1:nTrials
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
         delete(currentFuncHandle)
-        currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest(1:end-1)),'-r');
+        currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest(1:3)),'-r');
 
         % Entropy plot
         subplot(2,1,2)

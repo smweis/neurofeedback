@@ -96,11 +96,14 @@ else
     nCategories = 21;
 end
 
+% Ensure that nCategories is odd
+assert(mod(nCategories,2)==1);
 
+% Set the headroom if undefined
 if nargin >= 4
     headroom = headroomIn;
 else
-    headroom = [0.1 0.1];
+    headroom = 0.1;
 end
 
 %% Params to vars
@@ -110,10 +113,12 @@ zeta = params(3);	% multiplier of the amplitude of the surround
 beta = params(4);   % multiplier of the Watson 0-1 to the bins
 sigma = params(5);	% width of the BOLD fMRI noise against the 0-1 y vals
 
+% Ensure that beta is less than or equal to unity
+assert(beta<=1);
 
 % Determine the number of bins to be reserved for upper and lower headroom
-nLower = round(nCategories.*headroom(1));
-nUpper = round(nCategories.*headroom(2));
+nLower = round(nCategories.*headroom);
+nUpper = round(nCategories.*headroom);
 nMid = nCategories - nLower - nUpper;
 
 % Obtain the Watson response values for the frequencies to be modeled
