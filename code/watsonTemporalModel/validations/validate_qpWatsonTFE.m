@@ -11,6 +11,7 @@ if debugFlag
 else
     clearvars;
     close all;
+    debugFlag = 0;
 end
 
 
@@ -59,7 +60,7 @@ myQpParams.nOutcomes = 51;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
-headroom = [0.1 0.3];
+headroom = 0.1;
 
 % Create an anonymous function from qpWatsonTemporalModel in which we
 % specify the number of outcomes for the y-axis response
@@ -69,7 +70,7 @@ myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom
 tau = 0.5:0.5:8;	% time constant of the center filter (in msecs)
 kappa = 0.5:0.25:2;	% multiplier of the time-constant for the surround
 zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
-beta = 0.8:0.1:1.1; % multiplier that maps watson 0-1 to BOLD % bins
+beta = 0.8:0.1:1; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.5:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
@@ -125,7 +126,7 @@ if showPlots
     hold on
     currentBOLDHandleFit = plot(thePacket.stimulus.timebase,zeros(size(thePacket.stimulus.timebase)),'-r');
     xlim([min(thePacket.stimulus.timebase) max(thePacket.stimulus.timebase)]);
-    ylim([-2 3]);    
+    ylim([-3 3]);    
     xlabel('time [msecs]');
     ylabel('BOLD fMRI % change');
     title('BOLD fMRI data');
@@ -142,8 +143,8 @@ if showPlots
     currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams(1:end-1)),'-k');
 
     % Calculate the lower headroom bin offset. We'll use this later
-    nLower = round(headroom(1)*myQpParams.nOutcomes);
-    nUpper = round(headroom(2)*myQpParams.nOutcomes);
+    nLower = round(headroom*myQpParams.nOutcomes);
+    nUpper = round(headroom*myQpParams.nOutcomes);
     nMid = myQpParams.nOutcomes - nLower - nUpper;
     
     % Calculate how many non baseline trials there will be. 
@@ -160,6 +161,9 @@ if showPlots
     ylabel('Entropy');
 end
 
+
+% Create and save an rng seed to use for this simulation
+rngSeed = rng();
 
 
 nonBaselineTrials = 0;
@@ -178,7 +182,7 @@ for tt = 1:nTrials
         thePacket.stimulus.values = thePacketOrig.stimulus.values(1:nonBaselineTrials,1:tt*stimulusStructPerTrial);
         thePacket.stimulus.timebase = thePacketOrig.stimulus.timebase(:,1:tt*stimulusStructPerTrial);
         % Simulate outcome with tfe
-        [outcome, modelResponseStruct, thePacketOut]  = tfeUpdate(tfeObj,thePacket,'stimulusVec',stim,'qpParams',myQpParams);
+        [outcome, modelResponseStruct, thePacketOut]  = tfeUpdate(tfeObj,thePacket,'stimulusVec',stim,'qpParams',myQpParams,'rngSeed',rngSeed);
     
         % Update quest data structure
         questData = qpUpdate(questData,stim(nonBaselineTrials),outcome(nonBaselineTrials)); 
