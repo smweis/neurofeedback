@@ -2,17 +2,17 @@
 
 
 %% Are we debugging?
-debugFlag = 1;
-
-% Clean up
-if debugFlag
-    clearvars('-except','questDataCopy','debugFlag');
-    close all;
-else
-    clearvars;
-    close all;
-    debugFlag = 0;
-end
+% debugFlag = 0;
+% 
+% % Clean up
+% if debugFlag
+%     clearvars('-except','questDataCopy','debugFlag');
+%     close all;
+% else
+%     clearvars;
+%     close all;
+%     debugFlag = 0;
+% end
 
 
 
@@ -70,7 +70,7 @@ myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom
 tau = 0.5:0.5:8;	% time constant of the center filter (in msecs)
 kappa = 0.5:0.25:2;	% multiplier of the time-constant for the surround
 zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
-beta = 0.8:0.1:1; % multiplier that maps watson 0-1 to BOLD % bins
+beta = 0.6:0.1:1; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.5:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
@@ -95,16 +95,16 @@ if verbose
 end
 
 % Initialize Q+. Save some time if we're debugging
-
-if debugFlag
-    if exist('questDataCopy','var')
-        questData = questDataCopy;
-    else
-        questData = qpInitialize(myQpParams);
-        questDataCopy = questData;
-    end
-end
-
+% 
+% if debugFlag
+%     if exist('questDataCopy','var')
+%         questData = questDataCopy;
+%     else
+         questData = qpInitialize(myQpParams);
+         questDataCopy = questData;
+%     end
+% end
+% 
 
 
 
@@ -195,8 +195,6 @@ for tt = 1:nTrials
     % Update the plot
     if nonBaselineTrials > 0 && showPlots
         
-        % Current guess at the TTF, along with stims and outcomes
-        yOutcome = ((outcome(nonBaselineTrials)-nLower)/nMid)-(1/myQpParams.nOutcomes/2);
 
         % Simulated BOLD fMRI time-series and fit       
         subplot(3,1,1)
@@ -208,11 +206,13 @@ for tt = 1:nTrials
         
         % TTF figure
         subplot(3,1,2)
+        % Current guess at the TTF, along with stims and outcomes
+        yOutcome = (((outcome(nonBaselineTrials)-nLower)/nMid)-(1/myQpParams.nOutcomes/2))./simulatedPsiParams(4);
         scatter(stim(nonBaselineTrials),yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
         delete(currentFuncHandle)
-        currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest(1:end-1)),'-r');
+        currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest(1:3)),'-r');
 
         % Entropy by trial
         subplot(3,1,3)
