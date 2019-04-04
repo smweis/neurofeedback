@@ -102,7 +102,8 @@ p.addParameter('rngSeed',rng(1),@isstruct);
 p.addParameter('qpParams',[],@isstruct);
 p.addParameter('headroom', [], @isnumeric);
 p.addParameter('stimulusVec', [], @isnumeric);
-p.addParameter('boldLimits', [-3,3], @isnumeric);
+p.addParameter('boldLimitsSimulate', [-3,3], @isnumeric);
+p.addParameter('boldLimitsFit', [-3,3], @isnumeric);
 p.addParameter('noiseSD',.25, @isscalar);
 p.addParameter('pinkNoise',1, @isnumeric);
 p.addParameter('TRmsecs',800, @isnumeric);
@@ -148,7 +149,7 @@ if isempty(thePacket.response)
     
     % Now we go from bin # -> BOLD% signal (defined as the lower bound of
     %                                       the bin that value is in.)
-    params0.paramMainMatrix = binToBold(modelAmplitudeBin,p.Results.qpParams.nOutcomes,p.Results.boldLimits)';
+    params0.paramMainMatrix = binToBold(modelAmplitudeBin,p.Results.qpParams.nOutcomes,p.Results.boldLimitsSimulate)';
     
     % Estimate the response amplitude from the BOLD% signal. Lock the
     % MATLAB random number generator to give us the same BOLD noise on
@@ -159,6 +160,9 @@ if isempty(thePacket.response)
     % Resample the response to the BOLD fMRI TR
     BOLDtimebase = min(thePacket.response.timebase):p.Results.TRmsecs:max(thePacket.response.timebase);
     thePacket.response= tfeObj.resampleTimebase(thePacket.response,BOLDtimebase);
+    
+    % Mean center the response
+    thePacket.response.values = thePacket.response.values - mean(thePacket.response.values);
     
 end
 
@@ -178,8 +182,9 @@ end
     'searchMethod','linearRegression');
 
 % Then turn that BOLD% signal into bins.
-binOutput = boldToBin(params.paramMainMatrix,p.Results.qpParams.nOutcomes,p.Results.boldLimits)';
+binOutput = boldToBin(params.paramMainMatrix,p.Results.qpParams.nOutcomes,p.Results.boldLimitsFit)';
 pctBOLD = params.paramMainMatrix;
+
 
 end % main function
 
