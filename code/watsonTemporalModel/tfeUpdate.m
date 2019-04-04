@@ -98,10 +98,11 @@ p.addRequired('tfeObj',@isobject);
 p.addRequired('thePacket',@isstruct);
 
 % Optional params
+p.addParameter('rngSeed',rng(1),@isstruct);
 p.addParameter('qpParams',[],@isstruct);
 p.addParameter('headroom', [], @isnumeric);
 p.addParameter('stimulusVec', [], @isnumeric);
-p.addParameter('boldLimits', [-2,3], @isnumeric);
+p.addParameter('boldLimits', [-3,3], @isnumeric);
 p.addParameter('noiseSD',.25, @isscalar);
 p.addParameter('pinkNoise',1, @isnumeric);
 p.addParameter('TRmsecs',800, @isnumeric);
@@ -152,7 +153,7 @@ if isempty(thePacket.response)
     % Estimate the response amplitude from the BOLD% signal. Lock the
     % MATLAB random number generator to give us the same BOLD noise on
     % every iteration.
-    rng(1);
+    rng(p.Results.rngSeed);
     thePacket.response = tfeObj.computeResponse(params0,thePacket.stimulus,thePacket.kernel,'AddNoise',true);
     
     % Resample the response to the BOLD fMRI TR
