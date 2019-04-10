@@ -1,17 +1,19 @@
 %% QP + Watson TTF + TFE + real fmri data
 
 
-%% Are we debugging?
-debugFlag = 1;
+%% Do we want to reinitialize?
+reinitializeQuest = 0;
 
 % Clean up
-if debugFlag
-    clearvars('-except','questDataCopy','debugFlag');
+if reinitializeQuest
+    clearvars('-except','questDataCopy');
     close all;
 else
-    clearvars;
+    clearvars('-except','reinitializeQuest');
     close all;
 end
+
+debugFlag = 1;
 
 
 
@@ -83,7 +85,7 @@ myQpParams.nOutcomes = 51;
 
 % The headroom is the proportion of outcomes that are reserved above and
 % below the min and max output of the Watson model to account for noise
-headroom = [0.1 0.3];
+headroom = .1;
 
 % Create an anonymous function from qpWatsonTemporalModel in which we
 % specify the number of outcomes for the y-axis response
@@ -93,7 +95,7 @@ myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom
 tau = 0.5:0.5:8;	% time constant of the center filter (in msecs)
 kappa = 0.5:0.25:2;	% multiplier of the time-constant for the surround
 zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
-beta = 0.8:0.1:1.1; % multiplier that maps watson 0-1 to BOLD % bins
+beta = 0.8:0.1:1; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.5:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
@@ -114,13 +116,16 @@ end
 
 % Initialize Q+. Save some time if we're debugging
 
-if debugFlag
+if reinitializeQuest
     if exist('questDataCopy','var')
         questData = questDataCopy;
     else
         questData = qpInitialize(myQpParams);
         questDataCopy = questData;
     end
+else
+    questData = qpInitialize(myQpParams);
+    questDataCopy = questData;
 end
 
 
@@ -161,8 +166,8 @@ if showPlots
     currentFuncHandle = semilogx(freqDomain,watsonTemporalModel(freqDomain,watsonParams),'-k');
 
     % Calculate the lower headroom bin offset. We'll use this later
-    nLower = round(headroom(1)*myQpParams.nOutcomes);
-    nUpper = round(headroom(2)*myQpParams.nOutcomes);
+    nLower = round(headroom*myQpParams.nOutcomes);
+    nUpper = round(headroom*myQpParams.nOutcomes);
     nMid = myQpParams.nOutcomes - nLower - nUpper;
     
     % Calculate how many non baseline trials there will be. 
