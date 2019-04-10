@@ -2,17 +2,18 @@
 
 
 %% Are we debugging?
-% debugFlag = 0;
-% 
-% % Clean up
-% if debugFlag
-%     clearvars('-except','questDataCopy','debugFlag');
-%     close all;
-% else
-%     clearvars;
-%     close all;
-%     debugFlag = 0;
-% end
+reinitializeQuest = 1;
+
+% Clean up
+if reinitializeQuest
+    clearvars('-except','questDataCopy','reinitializeQuest');
+    close all;
+else
+    clearvars('-except','reinitializeQuest');
+    close all;
+end
+
+debugFlag = 1;
 
 
 
@@ -95,16 +96,16 @@ if verbose
 end
 
 % Initialize Q+. Save some time if we're debugging
-% 
-% if debugFlag
-%     if exist('questDataCopy','var')
-%         questData = questDataCopy;
-%     else
-         questData = qpInitialize(myQpParams);
-         questDataCopy = questData;
-%     end
-% end
-% 
+
+if reinitializeQuest
+    if exist('questDataCopy','var')
+        questData = questDataCopy;
+    else
+        questData = qpInitialize(myQpParams);
+        questDataCopy = questData;
+    end
+end
+
 
 
 

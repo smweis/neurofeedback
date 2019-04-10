@@ -20,12 +20,12 @@ function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj
 %                    ensure enough range of values for Q+ to work with. 
 %   'headroom'     - 2x1 vector specifying what proportion of the nOutcomes 
 %                    from qpParams will be used as extra on top and bottom. 
-%                    Default - [0.1 0.3]
+%                    Default - .1
 %   'stimulusVec'  - If simulation mode, a vector of stimulus frequencies
 %   'boldLimits'   - The upper and lower values of percent change for the 
 %                    BOLD signal. These should be well above and below what
 %                    you think the dynamic range should be. 
-%                    Default - [-2,3]
+%                    Default - [-3,3]
 %   'noiseSD'      - How many standard deviations of noise should TFE use 
 %                    to simulate neural data. 
 %                    Default - .25
@@ -61,7 +61,7 @@ function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj
     
     % The headroom is the proportion of outcomes that are reserved above and
     % below the min and max output of the Watson model to account for noise
-    headroom = [0.1 0.3];
+    headroom = .1;
 
     % Create an anonymous function from qpWatsonTemporalModel in which we
     % specify the number of outcomes for the y-axis response
@@ -69,7 +69,7 @@ function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj
     tau = 0.5:0.5:10;	% time constant of the center filter (in msecs)
     kappa = 0.5:0.25:3;	% multiplier of the time-constant for the surround
     zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
-    beta = 0.8:0.1:1.1; % multiplier that maps watson 0-1 to BOLD % bins
+    beta = 0.8:0.1:1; % multiplier that maps watson 0-1 to BOLD % bins
     sigma = 0:0.25:2;	% width of the BOLD fMRI noise against the 0-1 y vals
     myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
     simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) randsample(beta,1) 1];
