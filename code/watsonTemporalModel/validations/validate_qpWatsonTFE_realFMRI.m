@@ -35,7 +35,9 @@ load(stimDataLoc);
 
 % Create the stimulus vec (with no zero trials)
 stimulusVec = stimParams(runNum).params.stimFreq;
-stimulusVecNoBaselineTrials = stimulusVec(stimulusVec > 0);
+stimulusVecNoBaselineTrials = stimulusVec;
+stimulusVecNoBaselineTrials(stimulusVecNoBaselineTrials == 0) = 30;
+%stimulusVecNoBaselineTrials = stimulusVec(stimulusVec > 0);
 
 % Some information about the trials?
 nTrials = length(stimulusVec); % how many trials
@@ -181,6 +183,15 @@ end
 nonBaselineTrials = 0;
 thePacketOrig = thePacket;
 
+% Create a copy of Q+
+questDataUntrained = questData;
+
+% Initiate BOLD limits fairly large
+BOLDminFit = -1;
+BOLDmaxFit = 1;
+
+BOLDminSim = min(thePacket.response.values) - std(thePacket.response.values);
+BOLDmaxSim = max(thePacket.response.values) + std(thePacket.response.values);
 
 
 %% Run simulated trials
@@ -193,6 +204,9 @@ for tt = 1:nTrials
         % Get stimulus for this trial
         questStim(nonBaselineTrials) = qpQuery(questData);
         
+        
+        questData = questDataUntrained;
+        
         stim(nonBaselineTrials) = stimulusVecNoBaselineTrials(nonBaselineTrials);
         
         % Update thePacket to be just the current trials.
@@ -201,12 +215,25 @@ for tt = 1:nTrials
         
         thePacket.response.values = thePacketOrig.response.values(1:tt*responseStructPerTrial);
         thePacket.response.timebase = thePacketOrig.response.timebase(:,1:tt*responseStructPerTrial);
+        
         % Simulate outcome with tfe
+        [outcome, modelResponseStruct, thePacketOut, pctBOLDresponse]  = tfeUpdate(tfeObj,thePacket,...,
+                                                                         'qpParams',myQpParams,...,
+                                                                         'boldLimitsSimulate',[BOLDminSim,BOLDmaxSim],...,
+                                                                         'boldLimitsFit',[BOLDminFit,BOLDmaxFit]);
 
-        [outcome, modelResponseStruct, thePacketOut, pctBOLDresponse]  = tfeUpdate(tfeObj,thePacket,'qpParams',myQpParams);
-
+                                                                     
+                                                                     
+        BOLDminFit = min(thePacket.response.values)
+        BOLDmaxFit = max(thePacket.response.values)
+                                                                     
+                                                                     
         % Update quest data structure
-        questData = qpUpdate(questData,stim(nonBaselineTrials),outcome(nonBaselineTrials)); 
+        
+        for yy = 1:nonBaselineTrials
+            questData = qpUpdate(questData,stim(yy),outcome(yy)); 
+        end
+        
 
         
         

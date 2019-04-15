@@ -174,8 +174,11 @@ thePacketOrig = thePacket;
 questDataUntrained = questData;
 
 % Initiate BOLD limits fairly large
-BOLDmin = -3;
-BOLDmax = 3;
+BOLDminFit = -3;
+BOLDmaxFit = 3;
+
+BOLDminSim = -3;
+BOLDmaxSim = 3;
 
 %% Run simulated trials
 for tt = 1:nTrials
@@ -208,14 +211,14 @@ for tt = 1:nTrials
                                                         'stimulusVec',stim,...,
                                                         'qpParams',myQpParams,...,
                                                         'rngSeed',rngSeed,...,
-                                                        'boldLimitsSimulate',[-3,3],...,
-                                                        'boldLimitsFit',[BOLDmin,BOLDmax]);
+                                                        'boldLimitsSimulate',[BOLDminSim,BOLDmaxSim],...,
+                                                        'boldLimitsFit',[BOLDminFit,BOLDmaxFit]);
     
         
         % Estimate BOLD min and max
         
-        BOLDmin = min(modelResponseStruct.values) - std(modelResponseStruct.values)
-        BOLDmax = max(modelResponseStruct.values) + std(modelResponseStruct.values)
+        BOLDminFit = min(modelResponseStruct.values) - std(modelResponseStruct.values)
+        BOLDmaxFit = max(modelResponseStruct.values) + std(modelResponseStruct.values)
         
         
         % Update quest data structure
