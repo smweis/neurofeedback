@@ -90,6 +90,7 @@ function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj
 
 %% Begin function
 
+
 %% Parse input
 p = inputParser;
 
