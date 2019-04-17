@@ -144,12 +144,13 @@ if isempty(thePacket.response)
     modelAmplitudeBin = zeros(length(p.Results.stimulusVec),1);
     
     
-   % set the first modelAmplitudeBin = to the baseline level. 
-    modelAmplitudeBin(1) = round(p.Results.qpParams.nOutcomes*p.Results.headroom);
-    
+    baselineBin = round(p.Results.qpParams.nOutcomes*p.Results.headroom);
+    modelAmplitudeBin(1) = 
     % Here we go from stimulus frequency -> bins (what qpOutcomeF returns)
-    for ii = 1:length(p.Results.stimulusVec)
-        modelAmplitudeBin(ii+1) = p.Results.qpParams.qpOutcomeF(p.Results.stimulusVec(ii)) + modelAmplitudeBin(1);    
+    for ii = 2:length(p.Results.stimulusVec)
+    
+        modelAmplitudeBin(ii) = p.Results.qpParams.qpOutcomeF(p.Results.stimulusVec(ii)) + baselineBin;
+        
     end
     
     % Now we go from bin # -> BOLD% signal (defined as the lower bound of

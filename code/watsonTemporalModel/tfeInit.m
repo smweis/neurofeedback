@@ -64,15 +64,27 @@ stimulusStruct.timebase = linspace(0,totalTime-deltaT,totalTime/deltaT);
 nTimeSamples = size(stimulusStruct.timebase,2);
 
 % Create the stimulus struct
-nEvents = 0;
+nonBaselineEvents = 1;
+totalEvents = 0;
 eventTimes=[];
+stimulusStruct.values(1,:) = zeros(1,nTimeSamples);
+
+
+% This loop will create a stimulus struct that has the property that each 
+% non-baseline trial will create its own regressor (row). Each baseline
+% trial will be added to the first regressor. 
 for ii=1:(p.Results.nTrials)
+    totalEvents = totalEvents + 1;
+    eventTimes(totalEvents) = (ii-1)*eventDuration;
     if mod(ii-1,p.Results.baselineTrialRate)~=0
-        nEvents = nEvents+1;
-        eventTimes(nEvents) = (ii-1)*eventDuration;
-        stimulusStruct.values(nEvents,:)=zeros(1,nTimeSamples);
-        stimulusStruct.values(nEvents,(eventTimes(nEvents)/deltaT)+1:eventTimes(nEvents)/deltaT+eventDuration/deltaT)=1;
+        nonBaselineEvents = nonBaselineEvents + 1;
+        stimulusStruct.values(nonBaselineEvents,:)=zeros(1,nTimeSamples);
+        stimulusStruct.values(nonBaselineEvents,(eventTimes(totalEvents)/deltaT)+1:eventTimes(totalEvents)/deltaT+eventDuration/deltaT)=1;
+    else
+        stimulusStruct.values(1,(eventTimes(totalEvents)/deltaT+1):eventTimes(totalEvents)/deltaT+eventDuration/deltaT)=1;       
     end
+    
+    
 end
 
 %% Define a kernelStruct. In this case, a double gamma HRF
