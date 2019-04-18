@@ -14,7 +14,7 @@ close all
 simulatedPsiParams = [];
 
 % How many trials to run?
-nTrials = 20;
+nTrials = 50;
 
 % How talkative is the simulation?
 showPlots = true;
@@ -125,7 +125,7 @@ for tt = 1:nTrials
     if showPlots
         
         % Current guess at the TTF, along with stims and outcomes
-        yOutcome = ((outcome-nLower)/nMid)-(1/myQpParams.nOutcomes)/2;
+        yOutcome = (((outcome-nLower)/nMid)-(1/myQpParams.nOutcomes/2))./simulatedPsiParams(4);
         subplot(2,1,1)
         scatter(stim,yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
