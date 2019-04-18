@@ -279,7 +279,7 @@ for tt = 1:nTrials
         % TTF figure
         subplot(3,1,2)
         % Current guess at the TTF, along with stims and outcomes
-        yOutcome = (((outcome-nLower)/nMid)-(1/myQpParams.nOutcomes/2))./simulatedPsiParams(4);
+        yOutcome = (outcome-1-nLower)./(nMid*simulatedPsiParams(4));
         scatter(stim,yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
