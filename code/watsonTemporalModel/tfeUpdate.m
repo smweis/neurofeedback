@@ -103,7 +103,7 @@ p.addParameter('rngSeed',rng(1),@isstruct);
 p.addParameter('qpParams',[],@isstruct);
 p.addParameter('headroom', .1, @isnumeric);
 p.addParameter('stimulusVec', [], @isnumeric);
-p.addParameter('boldLimitsSimulate', [-1,3], @isnumeric);
+p.addParameter('boldLimitsSimulate', [0,3], @isnumeric);
 p.addParameter('boldMaxFit', 3, @isnumeric);
 p.addParameter('noiseSD',.25, @isscalar);
 p.addParameter('pinkNoise',1, @isnumeric);

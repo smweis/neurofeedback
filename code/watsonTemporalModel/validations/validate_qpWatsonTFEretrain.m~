@@ -219,7 +219,7 @@ for tt = 1:nTrials
         % Check BOLD max. See if it is larger than the largest observed
         % value + 1 SD
 
-        %BOLDmaxFit = max(modelResponseStruct.values) + std(modelResponseStruct.values);
+        BOLDmaxFit = max(modelResponseStruct.values) + std(modelResponseStruct.values);
         
         
         % Update quest data structure
@@ -311,9 +311,9 @@ end
 % on the gridded parameter domain.
 psiParamsIndex = qpListMaxArg(questData.posterior);
 psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
-fprintf('Simulated parameters:              %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+fprintf('Simulated parameters:            %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
     simulatedPsiParams(1),simulatedPsiParams(2),simulatedPsiParams(3),simulatedPsiParams(4),simulatedPsiParams(5));
-fprintf('Max posterior QUEST+ parameters:   %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+fprintf('Max posterior QUEST+ parameters: %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
     psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4),psiParamsQuest(5));
 
 %% Find maximum likelihood fit. Use psiParams from QUEST+ as the starting
