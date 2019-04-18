@@ -219,7 +219,7 @@ for tt = 1:nTrials
         % Check BOLD max. See if it is larger than the largest observed
         % value + 1 SD
 
-        %BOLDmaxFit = max(modelResponseStruct.values) + std(modelResponseStruct.values);
+        BOLDmaxFit = max(modelResponseStruct.values) + std(modelResponseStruct.values);
         
         
         % Update quest data structure
@@ -279,7 +279,7 @@ for tt = 1:nTrials
         % TTF figure
         subplot(3,1,2)
         % Current guess at the TTF, along with stims and outcomes
-        yOutcome = ((outcome-1-nLower)./(myQpParams.nOutcomes)).*simulatedPsiParams(4);
+        yOutcome = ((outcome-1-nLower)./(myQpParams.nOutcomes)).*simulatedPsiParams(4) - 1/51;
         scatter(stim,yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);

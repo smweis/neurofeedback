@@ -214,6 +214,8 @@ if observedBins > nBins
     error('An observed bin falls outside the number of possible bins.');
 end
 
+observedBins(observedBins > nBins) = nBins;
+observedBins(observedBins < 1) = 1;
 
 boldBins = linspace(min(boldLimits),max(boldLimits),nBins);
 pctBOLD = boldBins(observedBins);
