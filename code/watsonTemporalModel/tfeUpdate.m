@@ -1,51 +1,64 @@
-function [oucomes, modelResponseStruct, params, thePacket] = tfeUpdate(thePacket, varargin)
-% Takes in the tfeObject created with tfeInit along with thePacket. If
-% thePacket.response is empty, will simulate an fMRI signal, fit that
-% signal, and return outputs suitable for use with Quest +. 
+function [oucomes, modelResponseStruct, thePacket] = tfeUpdate(thePacket, qpParams, stimulusVec, baselineStimulus, varargin)
+% Returns the QP outcomes given a packet and a stimulus vector.
 %
 % Syntax:
-%  [binAssignment, modelResponseStruct, params, thePacket] = tfeUpdate(tfeObj, thePacket, varargin)
+%  [oucomes, modelResponseStruct, thePacket] = tfeUpdate(thePacket, qpParams, stimulusVec, baselineStimulus)
 %
 % Description:
-%
+%	Takes in the tfeObject created with tfeInit along with thePacket. If
+%	thePacket.response is empty, will simulate an fMRI signal, fit that
+%	signal, and return outputs suitable for use with Quest +.
 %
 % Inputs:
-%   tfeObj                - temporal fitting engine object created using 
-%                           tfeInit
-%   thePacket             - struct for input into tfe, containing stimulus and kernel
-%                           values and timespace.
+%   thePacket             - Struct. Describes the stimulus, observed
+%                           response, and (optionally) a convolution kernel
+%                           to be applied to the stimulus. If the response
+%                           field is empty, the routine will run in
+%                           simulation mode.
+%   qpParams              - Struct. Generated from qpParams. This should 
+%                           contain a value for nOutcomes other than the
+%                           default (2) to ensure enough range of values
+%                           for Q+ to work with.
+%   stimulusVec           - 1xk vector. Provides the numeric value for each
+%                           stimulus.
+%   baselineStimulus      - Scalar. Provides the numeric value for the
+%                           baseline stimulus that is used for reference
+%                           coding.
 %
-% Optional key/value pairs:
-%   'qpParams'     - A struct generated from qpParams. This should contain
-%                    a value for nOutcomes other than the default (2) to
-%                    ensure enough range of values for Q+ to work with. 
-%   'headroom'     - 2x1 vector specifying what proportion of the nOutcomes 
-%                    from qpParams will be used as extra on top and bottom. 
-%                    Default - .1
-%   'stimulusVec'  - If simulation mode, a vector of stimulus frequencies
-%   'boldLimits'   - The upper and lower values of percent change for the 
-%                    BOLD signal. These should be well above and below what
-%                    you think the dynamic range should be. 
-%                    Default - [-3,3]
-%   'noiseSD'      - How many standard deviations of noise should TFE use 
-%                    to simulate neural data. 
-%                    Default - .25
-%   'pinkNoise'    - Logical, whether or not to include 1/f noise in the TFE
-%                    simulation. 
-%                    Default - 1 (true)
-%   'TRmsecs'      - If in simulation mode, how to downsample the simulated
-%                    BOLD signal so that the response.values struct has 
-%                    one value per TR. 
-%                    Default - 800
-%   'verbose'      - How talkative. 
-%                    Default - False
+% Optional key/value pairs (used in fitting):
+%  'headroom'             - Scalar. The proportion of the nOutcomes from 
+%                           qpParams that will be used as extra on top and
+%                           bottom.
+%  'fitMaxBOLD'           - Scalar. The value (in % change units) of the
+%                           maximum expected response to a stimulus w.r.t.
+%                           the response to the baseline stimulus.
+%
+% Optional key/value pairs (used in simulation):
+%  'simulateMaxBOLD'      - Scalar. The value (in % change units) of the
+%                           maximum expected response to a stimulus w.r.t.
+%                           the response to the baseline stimulus.
+%  'rngSeed'              - Numeric. By passing a seed to the random
+%                           nnumber generator, calling function can ensure
+%                           that this routine returns the same output for a
+%                           given input in simulation model.
+%  'noiseSD'              - Scalar. The amplitude of the noise added to the
+%                           simulated BOLD fMRI signal in units of standard
+%                           deviations.
+%  'pinkNoise'            - Logical. If the noise should be modeled as
+%                           pink (auto-correlated).
+%  'TRmsecs'              - Scalar. The TR of the BOLD fMRI measurement in 
+%                           msecs. Needed in simulation mode to know how
+%                           much to downsample the simulated signal.
 % 
 % Outputs:
-%   ouctomes      - nNoneBaselineTrials x 1 vector of integers referring to the bins
-%                         that each stimulus generates
-%   modelResponseStruct - The simulated response struct from tfe method fitResponse
-%   thePacket           - The updated packet with response struct completed.
-%   adjustedAmplitudes    - A 
+%   ouctomes              - 1xk vector. The outcome of each stimulus,
+%                           expressed as a integer indicating into which of
+%                           the nOutcome "bins" the response to each
+%                           stimulus fell.
+%   modelResponseStruct   - Struct. The simulated response struct from tfe 
+%                           method fitResponse
+%   thePacket             - Struct. The updated packet with response struct
+%                           completed.
 %
 % Examples:
 %{
@@ -106,74 +119,61 @@ function [oucomes, modelResponseStruct, params, thePacket] = tfeUpdate(thePacket
 %}
 
 
-%% Begin function
-
-
 %% Parse input
 p = inputParser;
 
 % Required input
 p.addRequired('thePacket',@isstruct);
+p.addRequired('qpParams',@isstruct);
+p.addRequired('stimulusVec',@isnumeric);
+p.addRequired('baselineStimulus',@isscalar);
 
-% Optional params
-p.addParameter('rngSeed',rng(1),@isstruct);
-p.addParameter('qpParams',[],@isstruct);
+% Optional params used in fitting
 p.addParameter('headroom', .1, @isnumeric);
-p.addParameter('stimulusVec', [], @isnumeric);
-p.addParameter('baselineStimulus', [], @isscalar);
-p.addParameter('simulateMaxBOLD', 3, @isscalar);
 p.addParameter('fitMaxBOLD', 3, @isscalar);
-p.addParameter('noiseSD',.25, @isscalar);
+
+% Optional params used in simulation
+p.addParameter('simulateMaxBOLD', 3, @isscalar);
+p.addParameter('rngSeed',rng(1),@isstruct);
+p.addParameter('noiseSD',0.5, @isscalar);
 p.addParameter('pinkNoise',1, @isnumeric);
 p.addParameter('TRmsecs',800, @isnumeric);
-p.addParameter('verbose', false, @islogical);
 
-% Parse and check the parameters
-p.parse( thePacket, varargin{:});
+% Parse
+p.parse( thePacket, qpParams, stimulusVec, baselineStimulus, varargin{:});
 
 % We need to have at least one "baseline" stimulus in the vector of
 % stimuli to support reference-coding of the BOLD fMRI responses
-if isempty(find(p.Results.stimulusVec==p.Results.baselineStimulus, 1))
+if isempty(find(stimulusVec==p.Results.baselineStimulus, 1))
     error('The stimulusVec must have at least one instance of the baselineStimulus.');
 end
+
+% Construct the temporal fitting engine model object
+tfeObj = tfeIAMP('verbosity','none');
 
 % Set a default params value based on how many stimulus values there should
 % have been (which is based on the number of rows in the stimulus.values
 % struct)
 defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
 
-% Construct the model object
-tfeObj = tfeIAMP('verbosity','none');
 
-%% Test if we are in simulate mode
-% If we are in simulate mode, we need to have the temporal fitting engine
-% generate the parameter estimates based on the qpWatsonTemporalModel
-% expected bins (based on the stimulus frequencies in stimulusVec).
-
+%% If response is emprty, simulate it
 if isempty(thePacket.response)
-    % If we're in simulation mode, we need a stimulus vector of frequencies.
-    if isempty(p.Results.stimulusVec)
-        error('No timeseries (thePacket.reponse is empty) and no stimulusVec.')
-    end
-    
-    % We also need qpParams
-    if isempty(p.Results.qpParams)
-        error('No qpParams. You need to initialize Q+ to use this in simulation mode.');
-    end
     
     % Initialize params0, which will allow us to create the forward model.
     params0 = tfeObj.defaultParams('defaultParamsInfo', defaultParamsInfo);
     params0.noiseSd = p.Results.noiseSD;
     params0.noiseInverseFrequencyPower = p.Results.pinkNoise;
-    modelAmplitude = zeros(length(p.Results.stimulusVec),1);
+    modelAmplitude = zeros(length(stimulusVec),1);
         
     % Obtain the continuous amplitude response
-    for ii = 1:length(p.Results.stimulusVec)        
-        modelAmplitude(ii) = p.Results.qpParams.continuousPF(p.Results.stimulusVec(ii));    
+    for ii = 1:length(stimulusVec)        
+        modelAmplitude(ii) = qpParams.continuousPF(stimulusVec(ii));    
     end
 
-    % We enforce reference coding, such that the response to the baseline
-    % stimulus is assigned the bin for a 0% BOLD response.
+    % We enforce reference coding, such that amplitude of response to the
+    % stimuli is expressed relative to the response to the baseline
+    % stimulus.
     modelAmplitude = modelAmplitude - round(mean(modelAmplitude==p.Results.baselineStimulus));
 
     % Scale the responses by the simulateMaxBold and place in the
@@ -196,26 +196,21 @@ if isempty(thePacket.response)
     
 end
 
-%% Fit the response struct with the IAMP model
-% Note, if we skipped simulation mode, this means we have a response struct
-% in thePacket and we can estimate the parameters directly.
-%
-% If we did not skip simulation mode, the response struct was created above
-% using the stimulus frequencies passed through stimulusVec.
 
-% Fit the timeseries, providing a set of amplitudes for the stimulus events
+%% Fit the response
 [params,~,modelResponseStruct] = tfeObj.fitResponse(thePacket,...
     'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression');
 
 % We engage in reference coding, such that the amplitude of any stimulus is
 % expressed w.r.t. the "baseline" stimulus
-adjustedAmplitudes = params.paramMainMatrix - mean(params.paramMainMatrix(p.Results.stimulusVec==p.Results.baselineStimulus));
+adjustedAmplitudes = params.paramMainMatrix - ...
+    mean(params.paramMainMatrix(stimulusVec==p.Results.baselineStimulus));
 
 % Convert the adjusted BOLD amplitudes into outcome bins.
 yVals = adjustedAmplitudes./p.Results.fitMaxBOLD;
 
 % Get the number of outcomes (bins)
-nOutcomes = p.Results.qpParams.nOutcomes;
+nOutcomes = qpParams.nOutcomes;
 
 % Determine the number of bins to be reserved for upper and lower headroom
 nLower = round(nOutcomes.*p.Results.headroom);

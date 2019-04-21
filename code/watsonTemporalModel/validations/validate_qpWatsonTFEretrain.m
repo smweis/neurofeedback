@@ -204,10 +204,8 @@ for tt = 1:nTrials
         'stimulusStructDeltaT',stimulusStructDeltaT);
     
     % Simulate outcome with tfeUpdate
-    [outcomes, modelResponseStruct, params, thePacketOut]  = tfeUpdate(thePacket,...,
-        'stimulusVec',stimulusVec,...,
-        'baselineStimulus',baselineStimulus,...
-        'qpParams',myQpParams,...,
+    [outcomes, modelResponseStruct, thePacketOut] = ...
+        tfeUpdate(thePacket, myQpParams, stimulusVec, baselineStimulus, ...
         'rngSeed',rngSeed,...,
         'simulateMaxBOLD',simulateMaxBOLD,...,
         'fitMaxBOLD',fitMaxBOLD);
