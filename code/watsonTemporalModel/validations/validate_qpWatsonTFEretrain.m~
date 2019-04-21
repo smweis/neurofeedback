@@ -34,18 +34,10 @@ simulatedPsiParams = [];
 % Some information about the trials?
 nTrials = 20; % how many trials
 trialLengthSecs = 12; % seconds per trial
-baselineTrialRate = 6; % present a gray screen (baseline trial) every X trials
 stimulusStructDeltaT = 100; % the resolution of the stimulus struct in msecs
 
-% Use this for calculating the stim struct resolution
-stimulusStructPerTrial = trialLengthSecs * 1000 / stimulusStructDeltaT;
-
-% Initialize tfeObj
-[tfeObj, thePacket] = tfeInit('nTrials',nTrials,...,
-                              'trialLengthSecs',trialLengthSecs,...,
-                              'baselineTrialRate',baselineTrialRate,...,
-                              'stimulusStructDeltaT',stimulusStructDeltaT);
-
+% Which stimulus is the "baseline" stimulus
+baselineStimulus = 0;
 
 % How talkative is the simulation?
 showPlots = true;
@@ -57,8 +49,8 @@ verbose = true;
 % Get the default Q+ params
 myQpParams = qpParams;
 
-% Add the stimulus domain. Log spaced frequencies between ~2 and 30 Hz
-myQpParams.stimParamsDomainList = {[1.875,2.5,3.75,5,7.5,10,15,20,30]};
+% Add the stimulus domain. ~Log spaced frequencies between 0 and 30 Hz
+myQpParams.stimParamsDomainList = {[0,1.875,2.5,3.75,5,7.5,10,15,20,30]};
 nStims = length(myQpParams.stimParamsDomainList{1}); 
 
 % The number of outcome categories.
@@ -91,8 +83,9 @@ end
 lowerBounds = [tau(1) kappa(1) zeta(1) beta(1) sigma(1)];
 upperBounds = [tau(end) kappa(end) zeta(end) beta(end) sigma(end)];
 
-% Create a simulated observer
+% Create a simulated observer with both binned and continuous output
 myQpParams.qpOutcomeF = @(f) qpSimulatedObserver(f,myQpParams.qpPF,simulatedPsiParams);
+myQpParams.continuousPF = @(f) watsonTemporalModel(f,simulatedPsiParams);
 
 % Warn the user that we are initializing
 if verbose
@@ -171,10 +164,6 @@ end
 % Create and save an rng seed to use for this simulation
 rngSeed = rng();
 
-
-nonBaselineTrials = 0;
-thePacketOrig = thePacket;
-
 % Create a copy of Q+
 questDataUntrained = questData;
 
@@ -185,29 +174,25 @@ BOLDmaxFit = 3;
 
 %% Run simulated trials
 for tt = 1:nTrials
+
+    % Ask QP to supply our next stimulus. If it is the first trial we
+    % require a baseline event
+    if tt==1
+        stim(tt)=baselineStimulus;
+    else
+        stim(tt) = qpQuery(questData);
+    end
     
-    if mod(tt,baselineTrialRate) ~= 1
+    % Grab a naive copy of questData
+    questData = questDataUntrained;
         
-        
-        
-        nonBaselineTrials = nonBaselineTrials + 1;
-        
-        
-        % Get stimulus for this trial
-         stim(nonBaselineTrials) = qpQuery(questData);
+    % Create a packet    
+    thePacket = makePacket('nTrials',tt,...,
+                              'trialLengthSecs',trialLengthSecs,...,
+                              'stimulusStructDeltaT',stimulusStructDeltaT);
 
-        
-        questData = questDataUntrained;
-
-        
-        % Update the stimulus struct to be just the current trials.
-        thePacket.stimulus.values = thePacketOrig.stimulus.values(1:nonBaselineTrials+1,1:tt*stimulusStructPerTrial);
-        thePacket.stimulus.timebase = thePacketOrig.stimulus.timebase(:,1:tt*stimulusStructPerTrial);
-
-        
-        
-        % Simulate outcome with tfe
-        [outcome, modelResponseStruct, thePacketOut, pctBOLD]  = tfeUpdate(tfeObj,thePacket,...,
+    % Simulate outcome with tfeUpdate
+    [outcome, modelResponseStruct, thePacketOut, pctBOLD]  = tfeUpdate(thePacket,...,
                                                         'stimulusVec',stim,...,
                                                         'qpParams',myQpParams,...,
                                                         'rngSeed',rngSeed,...,
@@ -279,7 +264,7 @@ for tt = 1:nTrials
         % TTF figure
         subplot(3,1,2)
         % Current guess at the TTF, along with stims and outcomes
-        yOutcome = ((outcome-1-nLower)./(myQpParams.nOutcomes)).*simulatedPsiParams(4);
+        yOutcome = ((outcome-1-nLower)./(myQpParams.nOutcomes)).*simulatedPsiParams(4) - 1/51;
         scatter(stim,yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
@@ -311,9 +296,9 @@ end
 % on the gridded parameter domain.
 psiParamsIndex = qpListMaxArg(questData.posterior);
 psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
-fprintf('Simulated parameters:            %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+fprintf('Simulated parameters:              %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
     simulatedPsiParams(1),simulatedPsiParams(2),simulatedPsiParams(3),simulatedPsiParams(4),simulatedPsiParams(5));
-fprintf('Max posterior QUEST+ parameters: %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
+fprintf('Max posterior QUEST+ parameters:   %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
     psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4),psiParamsQuest(5));
 
 %% Find maximum likelihood fit. Use psiParams from QUEST+ as the starting

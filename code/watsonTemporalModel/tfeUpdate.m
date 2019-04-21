@@ -1,18 +1,19 @@
-function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj, thePacket, varargin)
+function [binAssignment, modelResponseStruct, params, thePacket] = tfeUpdate(thePacket, varargin)
 % Takes in the tfeObject created with tfeInit along with thePacket. If
 % thePacket.response is empty, will simulate an fMRI signal, fit that
 % signal, and return outputs suitable for use with Quest +. 
 %
 % Syntax:
-%  [binOutput, modelResponseStruct, thePacket] = tfeUpdate(tfeObj, thePacket, varargin)
+%  [binAssignment, modelResponseStruct, params, thePacket] = tfeUpdate(tfeObj, thePacket, varargin)
 %
 % Description:
 %
 %
 % Inputs:
-%   tfeObj         - temporal fitting engine object created using tfeInit
-%   thePacket      - struct for input into tfe, containing stimulus and kernel
-%                    values and timespace.
+%   tfeObj                - temporal fitting engine object created using 
+%                           tfeInit
+%   thePacket             - struct for input into tfe, containing stimulus and kernel
+%                           values and timespace.
 %
 % Optional key/value pairs:
 %   'qpParams'     - A struct generated from qpParams. This should contain
@@ -40,19 +41,20 @@ function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj
 %                    Default - False
 % 
 % Outputs:
-%   binOutput           - nNoneBaselineTrials x 1 vector of integers referring to the bins
+%   binOutput      - nNoneBaselineTrials x 1 vector of integers referring to the bins
 %                         that each stimulus generates
 %   modelResponseStruct - The simulated response struct from tfe method fitResponse
 %   thePacket           - The updated packet with response struct completed.
+%   adjustedAmplitudes    - A 
 %
 % Examples:
 %{
     % SIMULATION MODE
     nTrials = 35;
-    baselineTrialRate = 6;
-    nNonBaselineTrials = nTrials - ceil(nTrials/baselineTrialRate);
-    [tfeObj, thePacket] = tfeInit('nTrials',nTrials,'baselineTrialRate',baselineTrialRate);
+    thePacket = makePacket('nTrials',nTrials);
 
+    % Generate a random stimulus vector
+    stimulusVec = randsample([0, 0, 1.875,3.75,7.5,10,15,20,30],nTrials,true);
 
     % Initialize some parameters to pass to tfeUpdate from Quest
     myQpParams = qpParams;
@@ -63,29 +65,45 @@ function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj
     % below the min and max output of the Watson model to account for noise
     headroom = .1;
 
-    % Create an anonymous function from qpWatsonTemporalModel in which we
-    % specify the number of outcomes for the y-axis response
+    % Define binned psychometric fuction
     myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom);
+
+    % Create some simulatedPsiParams
     tau = 0.5:0.5:10;	% time constant of the center filter (in msecs)
     kappa = 0.5:0.25:3;	% multiplier of the time-constant for the surround
     zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
-    beta = 0.8:0.1:1; % multiplier that maps watson 0-1 to BOLD % bins
+    beta = 0.8:0.1:1;   % multiplier that maps watson 0-1 to BOLD % bins
     sigma = 0:0.25:2;	% width of the BOLD fMRI noise against the 0-1 y vals
     myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
     simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) randsample(beta,1) 1];
+
+    % This is the continuous psychometric fuction
+    myQpParams.continuousPF = @(f) watsonTemporalModel(f,simulatedPsiParams);
+
+    % This is the veridical psychometric fuction in binned outcomes
     myQpParams.qpOutcomeF = @(f) qpSimulatedObserver(f,myQpParams.qpPF,simulatedPsiParams);
     
+    % Identify which stimulus is the "baseline" stimulus
+    baselineStimulus = 0;
 
-    % Generate a random stimulus vector
-    stimulusVec = randsample([1.875,2.5,3.75,5,7.5,10,15,20,30],nNonBaselineTrials,true);
-    
-    [binOutput, modelResponseStruct, thePacketOut] = tfeUpdate(tfeObj, thePacket, 'qpParams', myQpParams, 'headroom', headroom, 'stimulusVec',stimulusVec);
+    % Perform the simulation
+    [binAssignment, modelResponseStruct, params, thePacketOut] = tfeUpdate(thePacket, 'qpParams', myQpParams, 'headroom', headroom, 'stimulusVec',stimulusVec, 'baselineStimulus', baselineStimulus);
 
-
-    
+    % Plot the results
+    figure
+    subplot(2,1,1)
+    plot(thePacketOut.response.timebase,thePacketOut.response.values,'.k');
+    hold on
+    plot(modelResponseStruct.timebase,modelResponseStruct.values,'-r');
+    subplot(2,1,2)
+    stimulusVecPlot = stimulusVec;
+    stimulusVecPlot(stimulusVecPlot==0)=1;
+    semilogx(stimulusVecPlot,binAssignment,'xk')
+    refline(0,myQpParams.nOutcomes.*headroom);
+    refline(0,myQpParams.nOutcomes-myQpParams.nOutcomes.*headroom);
+    ylim([1 myQpParams.nOutcomes]);
 
 %}
-
 
 
 %% Begin function
@@ -95,7 +113,6 @@ function [binOutput, modelResponseStruct, thePacket, pctBOLD] = tfeUpdate(tfeObj
 p = inputParser;
 
 % Required input
-p.addRequired('tfeObj',@isobject);
 p.addRequired('thePacket',@isstruct);
 
 % Optional params
@@ -103,23 +120,30 @@ p.addParameter('rngSeed',rng(1),@isstruct);
 p.addParameter('qpParams',[],@isstruct);
 p.addParameter('headroom', .1, @isnumeric);
 p.addParameter('stimulusVec', [], @isnumeric);
-p.addParameter('boldLimitsSimulate', [0,3], @isnumeric);
-p.addParameter('boldMaxFit', 3, @isnumeric);
+p.addParameter('baselineStimulus', [], @isscalar);
+p.addParameter('simulateMaxBOLD', 3, @isscalar);
+p.addParameter('fitMaxBOLD', 3, @isscalar);
 p.addParameter('noiseSD',.25, @isscalar);
 p.addParameter('pinkNoise',1, @isnumeric);
 p.addParameter('TRmsecs',800, @isnumeric);
 p.addParameter('verbose', false, @islogical);
 
 % Parse and check the parameters
-p.parse( tfeObj, thePacket, varargin{:});
+p.parse( thePacket, varargin{:});
 
+% We need to have at least one "baseline" stimulus in the vector of
+% stimuli to support reference-coding of the BOLD fMRI responses
+if isempty(find(p.Results.stimulusVec==p.Results.baselineStimulus, 1))
+    error('The stimulusVec must have at least one instance of the baselineStimulus.');
+end
 
 % Set a default params value based on how many stimulus values there should
 % have been (which is based on the number of rows in the stimulus.values
 % struct)
 defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
 
-
+% Construct the model object
+tfeObj = tfeIAMP('verbosity','none');
 
 %% Test if we are in simulate mode
 % If we are in simulate mode, we need to have the temporal fitting engine
@@ -132,34 +156,35 @@ if isempty(thePacket.response)
         error('No timeseries (thePacket.reponse is empty) and no stimulusVec.')
     end
     
+    % We also need qpParams
     if isempty(p.Results.qpParams)
         error('No qpParams. You need to initialize Q+ to use this in simulation mode.');
     end
-    
     
     % Initialize params0, which will allow us to create the forward model.
     params0 = tfeObj.defaultParams('defaultParamsInfo', defaultParamsInfo);
     params0.noiseSd = p.Results.noiseSD;
     params0.noiseInverseFrequencyPower = p.Results.pinkNoise;
-    modelAmplitudeBin = zeros(length(p.Results.stimulusVec),1);
-    
-    
-   % set the first modelAmplitudeBin = to the baseline level. 
-    modelAmplitudeBin(1) = round(p.Results.qpParams.nOutcomes*p.Results.headroom);
-    
-    % Here we go from stimulus frequency -> bins (what qpOutcomeF returns)
-    for ii = 1:length(p.Results.stimulusVec)
-        modelAmplitudeBin(ii+1) = p.Results.qpParams.qpOutcomeF(p.Results.stimulusVec(ii)) + modelAmplitudeBin(1);    
+    modelAmplitude = zeros(length(p.Results.stimulusVec),1);
+        
+    % Obtain the continuous amplitude response
+    for ii = 1:length(p.Results.stimulusVec)        
+        modelAmplitude(ii) = p.Results.qpParams.continuousPF(p.Results.stimulusVec(ii));    
     end
-    
-    % Now we go from bin # -> BOLD% signal (defined as the lower bound of
-    %                                       the bin that value is in.)
-    params0.paramMainMatrix = binToBold(modelAmplitudeBin,p.Results.qpParams.nOutcomes,p.Results.boldLimitsSimulate)';
-    
-    % Estimate the response amplitude from the BOLD% signal. Lock the
-    % MATLAB random number generator to give us the same BOLD noise on
-    % every iteration.
+
+    % We enforce reference coding, such that the response to the baseline
+    % stimulus is assigned the bin for a 0% BOLD response.
+    modelAmplitude = modelAmplitude - round(mean(modelAmplitude==p.Results.baselineStimulus));
+
+    % Scale the responses by the simulateMaxBold and place in the
+    % paramMainMatrix
+    params0.paramMainMatrix = modelAmplitude.*p.Results.simulateMaxBOLD;
+        
+    % Lock the MATLAB random number generator to give us the same BOLD
+    % noise on every iteration.
     rng(p.Results.rngSeed);
+    
+    % Create a simulated BOLD fMRI time series
     thePacket.response = tfeObj.computeResponse(params0,thePacket.stimulus,thePacket.kernel,'AddNoise',true);
     
     % Resample the response to the BOLD fMRI TR
@@ -178,70 +203,32 @@ end
 % If we did not skip simulation mode, the response struct was created above
 % using the stimulus frequencies passed through stimulusVec.
 
+% Fit the timeseries, providing a set of amplitudes for the stimulus events
+[params,~,modelResponseStruct] = tfeObj.fitResponse(thePacket,...
+    'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression');
 
-% We fit the timeseries to create a list of parameters, which are
-% in % BOLD signal.
+% We engage in reference coding, such that the amplitude of any stimulus is
+% expressed w.r.t. the "baseline" stimuli
+adjustedAmplitudes = params.paramMainMatrix - mean(params.paramMainMatrix(p.Results.stimulusVec==p.Results.baselineStimulus));
 
-[params,fVal,modelResponseStruct] = tfeObj.fitResponse(thePacket,...
-    'defaultParamsInfo', defaultParamsInfo);
+% Convert the adjusted BOLD amplitudes into outcome bins.
+yVals = adjustedAmplitudes./p.Results.fitMaxBOLD;
 
-% Scale params to match the baseline trial
+% Get the number of outcomes (bins)
+nOutcomes = p.Results.qpParams.nOutcomes;
 
-baseline = params.paramMainMatrix(1);
-        
-scaledParams = params.paramMainMatrix(2:end) - baseline;
+% Determine the number of bins to be reserved for upper and lower headroom
+nLower = round(nOutcomes.*p.Results.headroom);
+nUpper = round(nOutcomes.*p.Results.headroom);
+nMid = nOutcomes - nLower - nUpper;
 
-% Then turn that BOLD% signal into bins.
-binOutput = boldToBin(scaledParams,p.Results.qpParams.nOutcomes,p.Results.boldMaxFit)';
-pctBOLD = scaledParams;
+% Map the responses to categories
+binAssignment = 1+round(yVals.*nMid)+nLower;
+binAssignment(binAssignment > nOutcomes)=nOutcomes;
+binAssignment(binAssignment < 1)=1;
 
 
 end % main function
 
 
-
-
-function pctBOLD = binToBold(observedBins,nBins,boldLimits)
-% Convert a set of bin numbers to percent BOLD signals
-%
-% Inputs:
-% observedBins - n x 1 vector of bin numbers
-% nBins        - integer, number of possible bins
-% boldLimits   - 2 x 1 vector of min and max possible BOLD percent
-%                   signal changes
-
-if observedBins > nBins
-    error('An observed bin falls outside the number of possible bins.');
-end
-
-observedBins(observedBins > nBins) = nBins;
-observedBins(observedBins < 1) = 1;
-
-boldBins = linspace(min(boldLimits),max(boldLimits),nBins);
-pctBOLD = boldBins(observedBins);
-
-end
-
-
-function binOutput = boldToBin(pctBOLD,nBins,boldMax)
-% Convert a set of bin numbers to percent BOLD signals
-%
-% Inputs:
-% pctBold      - n x 1 vector of scalars
-% nBins        - integer, number of possible bins
-% boldLimits   - 2 x 1 vector of min and max possible BOLD percent
-%                   signal changes
-
-
-% If pctBOLD falls outside of the bold limit range, set it equal to the 
-% maximum (or minimum) possible bold limit. 
-pctBOLD(pctBOLD > max(boldMax)) = max(boldMax);
-pctBOLD(pctBOLD < 0) = 0;
-
-
-
-boldBins = linspace(0,max(boldMax),nBins);
-binOutput = discretize(pctBOLD,boldBins);
-
-end
 

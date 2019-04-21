@@ -1,8 +1,8 @@
-function [tfeObj, thePacket] = tfeInit(varargin)
-% Returns an initiated tfeObject and thePacket for use with tfeUpdate
+function thePacket = makePacket(varargin)
+% Returns thePacket for use with tfeUpdate
 %
 % Syntax:
-%  [tfeObj, thePacket] = tfeInit(varargin)
+%  thePacket = makePacket();
 %
 % Description:
 %	Generates a stimulusStruct and kernelStruct based on optional inputs
@@ -18,8 +18,6 @@ function [tfeObj, thePacket] = tfeInit(varargin)
 %                             Default - 25
 %   'trialLengthSecs'       - How long is each trial
 %                             Default - 12
-%   'baselineTrialRate'     - How often should a baseline trial occur (every X trials)
-%                             Default - 6
 %   'stimulusStructDeltaT'  - The resolution of the stimulus struct in msecs
 %                             Default - 100
 %   'verbose'               - How talkative. 
@@ -30,7 +28,7 @@ function [tfeObj, thePacket] = tfeInit(varargin)
 %
 % Examples:
 %{
-%   [tfeObj, thePacket] = tfeInit()
+   [tfeObj, thePacket] = tfeInit()
 %}
 
 
@@ -43,15 +41,11 @@ p = inputParser;
 % Optional params
 p.addParameter('nTrials', 25, @isscalar);
 p.addParameter('trialLengthSecs', 12, @isscalar);
-p.addParameter('baselineTrialRate', 6, @isscalar);
 p.addParameter('stimulusStructDeltaT',100,@isnumeric);
 p.addParameter('verbose', false, @islogical);
 
 % Parse and check the parameters
 p.parse( varargin{:});
-
-%% Construct the model object
-tfeObj = tfeIAMP('verbosity','none');
 
 
 %% Temporal domain of the stimulus
@@ -72,19 +66,10 @@ stimulusStruct.values(1,:) = zeros(1,nTimeSamples);
 
 % This loop will create a stimulus struct that has the property that each 
 % non-baseline trial will create its own regressor (row). Each baseline
-% trial will be added to the first regressor. 
+% trial will be added to the first regressor.
 for ii=1:(p.Results.nTrials)
-    totalEvents = totalEvents + 1;
-    eventTimes(totalEvents) = (ii-1)*eventDuration;
-    if mod(ii-1,p.Results.baselineTrialRate)~=0
-        nonBaselineEvents = nonBaselineEvents + 1;
-        stimulusStruct.values(nonBaselineEvents,:)=zeros(1,nTimeSamples);
-        stimulusStruct.values(nonBaselineEvents,(eventTimes(totalEvents)/deltaT)+1:eventTimes(totalEvents)/deltaT+eventDuration/deltaT)=1;
-    else
-        stimulusStruct.values(1,(eventTimes(totalEvents)/deltaT+1):eventTimes(totalEvents)/deltaT+eventDuration/deltaT)=1;       
-    end
-    
-    
+    stimulusStruct.values(ii,:)=zeros(1,nTimeSamples);
+    stimulusStruct.values(ii,(ii-1)*eventDuration/deltaT+1:ii*eventDuration/deltaT)=1;
 end
 
 %% Define a kernelStruct. In this case, a double gamma HRF
@@ -102,8 +87,6 @@ kernelStruct.values=hrf;
 
 % Normalize the kernel to have unit amplitude
 [ kernelStruct ] = normalizeKernelArea( kernelStruct );
-
-
 
 %% Construct a packet and model params
 thePacket.stimulus = stimulusStruct;

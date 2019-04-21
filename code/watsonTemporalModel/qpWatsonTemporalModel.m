@@ -1,8 +1,8 @@
-function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params, nCategoriesIn, headroomIn)
+function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params, nOutcomesIn, headroomIn)
 % Express the Watson model TTF as amplitude proportions
 %
 % Syntax:
-%  predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params, nCategoriesIn, headroomIn)
+%  predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params, nOutcomesIn, headroomIn)
 %
 % Description:
 %	This function maps the 0-1 amplitude of the Watson TTF response to a
@@ -25,18 +25,18 @@ function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params
 %                           The last parameter is the sigma of the Gaussian
 %                           smoothing to apply across the category
 %                           boundaries.
-%   nCategoriesIn         - Scalar. Optional. Sets the number of bins into
+%   nOutcomesIn           - Scalar. Optional. Sets the number of bins into
 %                           which the y-axis will be divided. Defaults to
 %                           21 if not provided.
-%   headroomIn            - 1x2 vector. Optional. Determines the proportion
-%                           of the nCategories to reserve above and below
+%   headroomIn            - Scalar. Optional. Determines the proportion
+%                           of the nOutcomes to reserve above and below
 %                           the minimum and maximum output of the Watson
-%                           model. Defaults to [0.1 0.1], which means that
-%                           20% of the nCategories range will correspond to
+%                           model. Defaults to 0.1, which means that 20% of
+%                           the nOutcomes range will correspond to
 %                           response values that are less than zero or
 %                           greater than 1.
 % Outputs:
-%   predictedProportions  - An nFrequencies x nCategories matrix that
+%   predictedProportions  - An nFrequencies x nOutcomes matrix that
 %                           provides for each of the frequencies to model
 %                           the probability that a measured response will
 %                           fall in a given amplitude bin.
@@ -49,12 +49,13 @@ function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params
     tau = 1;	% time constant of the center filter (in msecs)
     kappa = 1.5;	% multiplier of the time-constant for the surround
 	zeta = 1;	% multiplier that scales the amplitude of the surround
+    beta = 1;   % maximum model output across frequencies
 
     % Plot the Watson TTF
     freqDomain = logspace(0,log10(100),100);
     figure
     subplot(2,1,1);
-    semilogx(freqDomain,watsonTemporalModel(freqDomain,[tau kappa zeta]));
+    semilogx(freqDomain,watsonTemporalModel(freqDomain,[tau kappa zeta beta]));
     xlabel('log Freq [Hz]');
     ylabel('Amplitude TTF [0-1]');
     title('Watson TTF');
@@ -70,19 +71,19 @@ function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params
     sigma = 0.5;
 
     % Assemble the params with the noise modeled
-    params = [tau kappa zeta sigma];
+    params = [tau kappa zeta beta sigma];
 
     % The number of bins into which to divide the response amplitude
-    nCategories = 21;
+    nOutcomes = 21;
 
     % Perform the calculation
-    predictedProportions = qpWatsonTemporalModel(freqHz, params, nCategories);
+    predictedProportions = qpWatsonTemporalModel(freqHz, params, nOutcomes);
 
     % Plot the predicted proportions
     subplot(2,1,2);
-    plot(predictedProportions,1:nCategories,'*k')
+    plot(predictedProportions,1:nOutcomes,'*k')
     xlim([0 1]);
-    ylim([1 nCategories]);
+    ylim([1 nOutcomes]);
     xlabel('predicted proportion [0-1]');
     ylabel('Amplitude response bin');
     title('Predicted proportions');
@@ -91,13 +92,13 @@ function predictedProportions = qpWatsonTemporalModel(frequenciesToModel, params
 % The number of bins into which we will divide the range of y-axis response
 % values. Either passed or set as a default
 if nargin >= 3
-    nCategories = nCategoriesIn;
+    nOutcomes = nOutcomesIn;
 else
-    nCategories = 21;
+    nOutcomes = 21;
 end
 
-% Ensure that nCategories is odd
-assert(mod(nCategories,2)==1);
+% Ensure that nOutcomes is odd
+assert(mod(nOutcomes,2)==1);
 
 % Set the headroom if undefined
 if nargin >= 4
@@ -117,31 +118,27 @@ sigma = params(5);	% width of the BOLD fMRI noise against the 0-1 y vals
 assert(beta<=1);
 
 % Determine the number of bins to be reserved for upper and lower headroom
-nLower = round(nCategories.*headroom);
-nUpper = round(nCategories.*headroom);
-nMid = nCategories - nLower - nUpper;
+nLower = round(nOutcomes.*headroom);
+nUpper = round(nOutcomes.*headroom);
+nMid = nOutcomes - nLower - nUpper;
 
 % Obtain the Watson response values for the frequencies to be modeled
-yVals = watsonTemporalModel(frequenciesToModel, [tau kappa zeta]);
-
-% Scale the yVals by the beta. This serves to adjust the 0-1 output of the
-% Watson model to the empirical maximum BOLD fMRI response
-yVals = yVals .* beta;
+yVals = watsonTemporalModel(frequenciesToModel, [tau kappa zeta beta]);
 
 % Map the responses to categories
 binAssignment = 1+round(yVals.*nMid)+nLower;
-binAssignment(binAssignment > nCategories)=nCategories;
+binAssignment(binAssignment > nOutcomes)=nOutcomes;
 
 % Create a Gaussian kernel to reflect noise in the y-axis measurement
 if params(end)==0
-    gaussKernel = zeros(1,nCategories);
-    gaussKernel(floor(nCategories/2)+1)=1;
+    gaussKernel = zeros(1,nOutcomes);
+    gaussKernel(floor(nOutcomes/2)+1)=1;
 else
-    gaussKernel = gausswin(nCategories,nCategories/(10*sigma))';
+    gaussKernel = gausswin(nOutcomes,nOutcomes/(10*sigma))';
 end
 
 % Initialize a variable to hold the result
-predictedProportions = zeros(length(frequenciesToModel),nCategories);
+predictedProportions = zeros(length(frequenciesToModel),nOutcomes);
 
 % Loop over the array of frequenciesToModel
 for ii = 1:length(frequenciesToModel)
