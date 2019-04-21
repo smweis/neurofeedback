@@ -114,9 +114,6 @@ zeta = params(3);	% multiplier of the amplitude of the surround
 beta = params(4);   % multiplier of the Watson 0-1 to the bins
 sigma = params(5);	% width of the BOLD fMRI noise against the 0-1 y vals
 
-% Ensure that beta is less than or equal to unity
-assert(beta<=1);
-
 % Determine the number of bins to be reserved for upper and lower headroom
 nLower = round(nOutcomes.*headroom);
 nUpper = round(nOutcomes.*headroom);

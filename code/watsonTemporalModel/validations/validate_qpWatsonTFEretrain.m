@@ -26,18 +26,24 @@ debugFlag = 1;
 
 % Leave the simulatedPsiParams empty to try a random set of params.
 % Here are some params to try for specific TTF shapes:
-%	 A low-pass TTF in noisy fMRI data: [10 1 0.83 1]
+%  A low-pass TTF in noisy fMRI data: [10 1 0.83 1]
 %  A band-pass TTF in noisy fMRI data: [1.47 1.75 0.83 1]
-simulatedPsiParams = [];
-
+simulatedPsiParams = [4 1 1 1 0];
 
 % Some information about the trials?
 nTrials = 30; % how many trials
 trialLengthSecs = 12; % seconds per trial
 stimulusStructDeltaT = 100; % the resolution of the stimulus struct in msecs
 
-% Which stimulus is the "baseline" stimulus
-baselineStimulus = 100;
+% Define the simulated size of the BOLD response and the size that will be
+% assumed at the start of the modeling.
+simulateMaxBOLD = 3;
+fitMaxBOLD = 2;
+
+% Which stimulus (in freq Hz) is the "baseline" stimulus? This stimulus
+% should be selected with the expectation that the neural response to this
+% stimulus will be minimal as comapred to all other stimuli.
+baselineStimulus = 0;
 
 % How talkative is the simulation?
 showPlots = true;
@@ -50,7 +56,7 @@ verbose = true;
 myQpParams = qpParams;
 
 % Add the stimulus domain. ~Log spaced frequencies between 0 and 30 Hz
-myQpParams.stimParamsDomainList = {[1.875,2.5,3.75,5,7.5,10,15,20,30,100]};
+myQpParams.stimParamsDomainList = {[0,1.875,2.5,3.75,5,7.5,10,15,20,30]};
 nStims = length(myQpParams.stimParamsDomainList{1});
 
 % The number of outcome categories.
@@ -68,7 +74,7 @@ myQpParams.qpPF = @(f,p) qpWatsonTemporalModel(f,p,myQpParams.nOutcomes,headroom
 tau = 0.5:0.5:8;	% time constant of the center filter (in msecs)
 kappa = 0.5:0.25:2;	% multiplier of the time-constant for the surround
 zeta = 0:0.25:2;	% multiplier of the amplitude of the surround
-beta = 0.6:0.1:1; % multiplier that maps watson 0-1 to BOLD % bins
+beta = 0.5:0.2:2; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.5:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
@@ -76,7 +82,6 @@ myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 % noise to zero)
 if isempty(simulatedPsiParams)
     simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) randsample(beta,1) 0];
-    simulatedPsiParams = [8 2 1 1 0];
 end
 
 % Derive some lower and upper bounds from the parameter ranges. This is
@@ -142,7 +147,8 @@ if showPlots
     ylabel('Relative response amplitude');
     title('Estimate of Watson TTF');
     hold on
-    currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams),'-k');
+    currentOutcomesHandle = scatter(nan,nan);
+    currentTTFHandle = plot(freqDomain,watsonTemporalModel(freqDomain,simulatedPsiParams),'-k');
     
     % Calculate the lower headroom bin offset. We'll use this later
     nLower = round(headroom*myQpParams.nOutcomes);
@@ -166,9 +172,7 @@ rngSeed = rng();
 % Create a copy of Q+
 questDataUntrained = questData;
 
-% Initiate BOLD limits fairly large
-simulateMaxBOLD = 3;
-fitMaxBOLD = 3;
+% Create a stimulusVec to hold the trial across the loops
 stimulusVec = nan(1,nTrials);
 
 %% Run simulated trials
@@ -182,6 +186,15 @@ for tt = 1:nTrials
         stimulusVec(tt) = qpQuery(questData);
     end
     
+    % Update fitMaxBOLD with our best guess at the maximum BOLD
+    % fMRI response that could be evoked by a stimulus (relative to the
+    % baseline stimulus). The beta value of the model is the 4th parameter.
+    % Our hope is that it converges to unnity when we have the correct
+    % fitMaxBOLD value
+    psiParamsIndex = qpListMaxArg(questData.posterior);
+    psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
+    fitMaxBOLD = fitMaxBOLD.*psiParamsQuest(4);
+    
     % Grab a naive copy of questData
     questData = questDataUntrained;
     
@@ -191,18 +204,17 @@ for tt = 1:nTrials
         'stimulusStructDeltaT',stimulusStructDeltaT);
     
     % Simulate outcome with tfeUpdate
-    [outcome, modelResponseStruct, params, thePacketOut]  = tfeUpdate(thePacket,...,
+    [outcomes, modelResponseStruct, params, thePacketOut]  = tfeUpdate(thePacket,...,
         'stimulusVec',stimulusVec,...,
         'baselineStimulus',baselineStimulus,...
         'qpParams',myQpParams,...,
         'rngSeed',rngSeed,...,
         'simulateMaxBOLD',simulateMaxBOLD,...,
         'fitMaxBOLD',fitMaxBOLD);
-    
-    
-    % Update quest data structure
+        
+    % Update quest data structure. This is the slow step in the simulation.
     for yy = 1:tt
-        questData = qpUpdate(questData,stimulusVec(yy),outcome(yy));
+        questData = qpUpdate(questData,stimulusVec(yy),outcomes(yy));
     end
        
     % Update the plots
@@ -218,12 +230,16 @@ for tt = 1:nTrials
         % TTF figure
         subplot(3,1,2)
         % Current guess at the TTF, along with stims and outcomes
-        yOutcome = ((outcome-1-nLower)./(myQpParams.nOutcomes)).*simulatedPsiParams(4) - 1/51;
-        scatter(stimulusVec(1:tt),yOutcome,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
+        yVals = (outcomes - nLower - 1)./nMid;
+        yVals = yVals + mean(yVals(stimulusVec==baselineStimulus));
+        stimulusVecPlot = stimulusVec;
+        stimulusVecPlot(stimulusVecPlot==0)=1;
+        delete(currentOutcomesHandle);
+        currentOutcomesHandle = scatter(stimulusVecPlot(1:tt),yVals,'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2);
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
-        delete(currentFuncHandle)
-        currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest),'-r');
+        delete(currentTTFHandle)
+        currentTTFHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest),'-r');
         
         % Entropy by trial
         subplot(3,1,3)
@@ -250,10 +266,10 @@ end
 % on the gridded parameter domain.
 psiParamsIndex = qpListMaxArg(questData.posterior);
 psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
-fprintf('Simulated parameters:              %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
-    simulatedPsiParams(1),simulatedPsiParams(2),simulatedPsiParams(3),simulatedPsiParams(4),simulatedPsiParams(5));
-fprintf('Max posterior QUEST+ parameters:   %0.1f, %0.1f, %0.1f, %0.1f, %0.2f\n', ...
-    psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4),psiParamsQuest(5));
+fprintf('Simulated parameters:              %0.1f, %0.1f, %0.1f, %0.1f, %0.2f, %0.1f \n', ...
+    simulatedPsiParams(1),simulatedPsiParams(2),simulatedPsiParams(3),simulatedPsiParams(4),simulatedPsiParams(5),simulateMaxBOLD);
+fprintf('Max posterior QUEST+ parameters:   %0.1f, %0.1f, %0.1f, %0.1f, %0.2f, %0.1f\n', ...
+    psiParamsQuest(1),psiParamsQuest(2),psiParamsQuest(3),psiParamsQuest(4),psiParamsQuest(5),fitMaxBOLD);
 
 %% Find maximum likelihood fit. Use psiParams from QUEST+ as the starting
 % parameter for the search, and impose as parameter bounds the range

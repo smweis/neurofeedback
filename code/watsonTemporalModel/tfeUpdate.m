@@ -1,4 +1,4 @@
-function [binAssignment, modelResponseStruct, params, thePacket] = tfeUpdate(thePacket, varargin)
+function [oucomes, modelResponseStruct, params, thePacket] = tfeUpdate(thePacket, varargin)
 % Takes in the tfeObject created with tfeInit along with thePacket. If
 % thePacket.response is empty, will simulate an fMRI signal, fit that
 % signal, and return outputs suitable for use with Quest +. 
@@ -41,7 +41,7 @@ function [binAssignment, modelResponseStruct, params, thePacket] = tfeUpdate(the
 %                    Default - False
 % 
 % Outputs:
-%   binOutput      - nNoneBaselineTrials x 1 vector of integers referring to the bins
+%   ouctomes      - nNoneBaselineTrials x 1 vector of integers referring to the bins
 %                         that each stimulus generates
 %   modelResponseStruct - The simulated response struct from tfe method fitResponse
 %   thePacket           - The updated packet with response struct completed.
@@ -208,7 +208,7 @@ end
     'defaultParamsInfo', defaultParamsInfo, 'searchMethod','linearRegression');
 
 % We engage in reference coding, such that the amplitude of any stimulus is
-% expressed w.r.t. the "baseline" stimuli
+% expressed w.r.t. the "baseline" stimulus
 adjustedAmplitudes = params.paramMainMatrix - mean(params.paramMainMatrix(p.Results.stimulusVec==p.Results.baselineStimulus));
 
 % Convert the adjusted BOLD amplitudes into outcome bins.
@@ -222,11 +222,10 @@ nLower = round(nOutcomes.*p.Results.headroom);
 nUpper = round(nOutcomes.*p.Results.headroom);
 nMid = nOutcomes - nLower - nUpper;
 
-% Map the responses to categories
-binAssignment = 1+round(yVals.*nMid)+nLower;
-binAssignment(binAssignment > nOutcomes)=nOutcomes;
-binAssignment(binAssignment < 1)=1;
-
+% Map the responses to binned outcomes
+oucomes = 1+round(yVals.*nMid)+nLower;
+oucomes(oucomes > nOutcomes)=nOutcomes;
+oucomes(oucomes < 1)=1;
 
 end % main function
 
