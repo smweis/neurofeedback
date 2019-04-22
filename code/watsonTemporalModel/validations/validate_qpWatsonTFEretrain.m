@@ -28,10 +28,11 @@ debugFlag = 1;
 % Here are some params to try for specific TTF shapes:
 %  A low-pass TTF in noisy fMRI data: [10 1 0.83 1]
 %  A band-pass TTF in noisy fMRI data: [1.47 1.75 0.83 1]
-simulatedPsiParams = [4 1 1 1 0];
+%simulatedPsiParams = [4 1 1 1 0];
+simulatedPsiParams = [];
 
 % Some information about the trials?
-nTrials = 30; % how many trials
+nTrials = 50; % how many trials
 trialLengthSecs = 12; % seconds per trial
 stimulusStructDeltaT = 100; % the resolution of the stimulus struct in msecs
 
@@ -43,7 +44,7 @@ fitMaxBOLD = 2;
 % Which stimulus (in freq Hz) is the "baseline" stimulus? This stimulus
 % should be selected with the expectation that the neural response to this
 % stimulus will be minimal as comapred to all other stimuli.
-baselineStimulus = 0;
+baselineStimulus = 200;
 
 % How talkative is the simulation?
 showPlots = true;
@@ -56,7 +57,7 @@ verbose = true;
 myQpParams = qpParams;
 
 % Add the stimulus domain. ~Log spaced frequencies between 0 and 30 Hz
-myQpParams.stimParamsDomainList = {[0,1.875,2.5,3.75,5,7.5,10,15,20,30]};
+myQpParams.stimParamsDomainList = {[200,1.875,2.5,3.75,5,7.5,10,15,20,30]};
 nStims = length(myQpParams.stimParamsDomainList{1});
 
 % The number of outcome categories.
@@ -78,10 +79,10 @@ beta = 0.5:0.2:2; % multiplier that maps watson 0-1 to BOLD % bins
 sigma = 0:0.5:2;	% width of the BOLD fMRI noise against the 0-1 y vals
 myQpParams.psiParamsDomainList = {tau, kappa, zeta, beta, sigma};
 
-% Pick some random params to simulate if none provided (but set the neural
-% noise to zero)
+% Pick some random params to simulate if none provided (but set the beta to
+% one and the neural noise to zero)
 if isempty(simulatedPsiParams)
-    simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) randsample(beta,1) 0];
+    simulatedPsiParams = [randsample(tau,1) randsample(kappa,1) randsample(zeta,1) 1 0];
 end
 
 % Derive some lower and upper bounds from the parameter ranges. This is
