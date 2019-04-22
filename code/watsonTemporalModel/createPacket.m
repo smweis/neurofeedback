@@ -1,4 +1,4 @@
-function thePacket = makePacket(varargin)
+function thePacket = createPacket(varargin)
 % Returns thePacket for use with tfeUpdate
 %
 % Syntax:
@@ -28,7 +28,7 @@ function thePacket = makePacket(varargin)
 %
 % Examples:
 %{
-   [tfeObj, thePacket] = tfeInit()
+   [tfeObj, thePacket] = createPacket()
 %}
 
 
@@ -36,7 +36,6 @@ function thePacket = makePacket(varargin)
 p = inputParser;
 
 % Required input
-%p.addRequired('sceneGeometry',@isstruct);
 
 % Optional params
 p.addParameter('nTrials', 25, @isscalar);

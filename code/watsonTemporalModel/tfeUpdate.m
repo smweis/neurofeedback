@@ -1,4 +1,4 @@
-function [oucomes, modelResponseStruct, thePacket] = tfeUpdate(thePacket, qpParams, stimulusVec, baselineStimulus, varargin)
+function [outcomes, modelResponseStruct, thePacket] = tfeUpdate(thePacket, qpParams, stimulusVec, baselineStimulus, varargin)
 % Returns the QP outcomes given a packet and a stimulus vector.
 %
 % Syntax:
@@ -64,7 +64,7 @@ function [oucomes, modelResponseStruct, thePacket] = tfeUpdate(thePacket, qpPara
 %{
     % SIMULATION MODE
     nTrials = 35;
-    thePacket = makePacket('nTrials',nTrials);
+    thePacket = createPacket('nTrials',nTrials);
 
     % Generate a random stimulus vector
     stimulusVec = randsample([0, 0, 1.875,3.75,7.5,10,15,20,30],nTrials,true);
@@ -157,7 +157,7 @@ tfeObj = tfeIAMP('verbosity','none');
 defaultParamsInfo.nInstances = size(thePacket.stimulus.values,1);
 
 
-%% If response is emprty, simulate it
+%% If response is empty, simulate it
 if isempty(thePacket.response)
     
     % Initialize params0, which will allow us to create the forward model.
@@ -218,9 +218,9 @@ nUpper = round(nOutcomes.*p.Results.headroom);
 nMid = nOutcomes - nLower - nUpper;
 
 % Map the responses to binned outcomes
-oucomes = 1+round(yVals.*nMid)+nLower;
-oucomes(oucomes > nOutcomes)=nOutcomes;
-oucomes(oucomes < 1)=1;
+outcomes = 1+round(yVals.*nMid)+nLower;
+outcomes(outcomes > nOutcomes)=nOutcomes;
+outcomes(outcomes < 1)=1;
 
 end % main function
 

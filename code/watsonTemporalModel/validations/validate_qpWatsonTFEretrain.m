@@ -43,7 +43,7 @@ fitMaxBOLD = 2;
 
 % Which stimulus (in freq Hz) is the "baseline" stimulus? This stimulus
 % should be selected with the expectation that the neural response to this
-% stimulus will be minimal as comapred to all other stimuli.
+% stimulus will be minimal as compared to all other stimuli.
 baselineStimulus = 200;
 
 % How talkative is the simulation?
@@ -109,8 +109,18 @@ if reinitializeQuest
     end
 end
 
-% Tack on a continuous output simulated observer to myQpPara,s
+% Tack on a continuous output simulated observer to myQpParams
 myQpParams.continuousPF = @(f) watsonTemporalModel(f,simulatedPsiParams);
+
+
+% Create a full length packet
+thePacket = createPacket('nTrials',nTrials,...,
+    'trialLengthSecs',trialLengthSecs,...,
+    'stimulusStructDeltaT',stimulusStructDeltaT);
+ 
+
+
+
 
 % Prompt the user we to start the simulation
 if verbose
@@ -120,16 +130,15 @@ if verbose
     fprintf('Fitting...');
 end
 
+
+
+
 % Create a plot in which we can track the model progress
 if showPlots
     figure
     
     % Set up the BOLD fMRI response and model fit
     subplot(3,1,1)
-        % Create a full length packet
-    thePacket = makePacket('nTrials',nTrials,...,
-        'trialLengthSecs',trialLengthSecs,...,
-        'stimulusStructDeltaT',stimulusStructDeltaT);
     currentBOLDHandleData = plot(thePacket.stimulus.timebase,zeros(size(thePacket.stimulus.timebase)),'-k');
     hold on
     currentBOLDHandleFit = plot(thePacket.stimulus.timebase,zeros(size(thePacket.stimulus.timebase)),'-r');
@@ -190,7 +199,7 @@ for tt = 1:nTrials
     % Update fitMaxBOLD with our best guess at the maximum BOLD
     % fMRI response that could be evoked by a stimulus (relative to the
     % baseline stimulus). The beta value of the model is the 4th parameter.
-    % Our hope is that it converges to unnity when we have the correct
+    % Our hope is that it converges to unity when we have the correct
     % fitMaxBOLD value
     psiParamsIndex = qpListMaxArg(questData.posterior);
     psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
@@ -200,7 +209,7 @@ for tt = 1:nTrials
     questData = questDataUntrained;
     
     % Create a packet
-    thePacket = makePacket('nTrials',tt,...,
+    thePacket = createPacket('nTrials',tt,...,
         'trialLengthSecs',trialLengthSecs,...,
         'stimulusStructDeltaT',stimulusStructDeltaT);
     
@@ -238,7 +247,7 @@ for tt = 1:nTrials
         psiParamsIndex = qpListMaxArg(questData.posterior);
         psiParamsQuest = questData.psiParamsDomain(psiParamsIndex,:);
         delete(currentTTFHandle)
-        currentTTFHandle = plot(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest),'-r');
+        currentTTFHandle = semilogx(freqDomain,watsonTemporalModel(freqDomain,psiParamsQuest),'-r');
         
         % Entropy by trial
         subplot(3,1,3)
