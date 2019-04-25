@@ -1,5 +1,13 @@
 function play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
 
+
+%% TO DO BEFORE WE RUN THIS AGAIN
+    % Change the way baseline trials are handled so that we can use 200 as
+    % a "detect baseline". 
+    % Perhaps also ensure that we present a baseline trial every X trials,
+    % if one has not already been presented by Quest+
+
+
 %% Displays a black/white full-field flicker
 %
 %   Usage:
