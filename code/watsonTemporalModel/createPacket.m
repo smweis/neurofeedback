@@ -23,12 +23,11 @@ function thePacket = createPacket(varargin)
 %   'verbose'               - How talkative. 
 %                             Default - False
 % Outputs:
-%   tfeObj               - Object handle
 %   thePacket            - Structure.
 %
 % Examples:
 %{
-   [tfeObj, thePacket] = createPacket()
+   thePacket = createPacket()
 %}
 
 
@@ -55,12 +54,6 @@ eventDuration = p.Results.trialLengthSecs*1000; % block duration in msecs
 % Define the timebase
 stimulusStruct.timebase = linspace(0,totalTime-deltaT,totalTime/deltaT);
 nTimeSamples = size(stimulusStruct.timebase,2);
-
-% Create the stimulus struct
-nonBaselineEvents = 1;
-totalEvents = 0;
-eventTimes=[];
-stimulusStruct.values(1,:) = zeros(1,nTimeSamples);
 
 
 % This loop will create a stimulus struct that has the property that each 
