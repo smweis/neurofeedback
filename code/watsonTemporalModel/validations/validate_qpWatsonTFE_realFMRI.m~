@@ -80,7 +80,7 @@ thePacket.response.timebase = linspace(0,(responseTimebaseLength-1)*boldTRmsecs,
 
 % We'll see how quickly we can converge on the full model
 watsonParams = watsonParams(runNum,:);
-watsonParams(:,4) = 1;
+watsonParams(4) = 1;
 
 % How talkative is the simulation?
 showPlots = true;
@@ -264,31 +264,31 @@ for tt = 1:nTrials
         meanBoldPerStim = zeros(size(stim,1),numberUniqueStims);
         for nu = 1:numberUniqueStims
             indexToThisUniqueValue = (nu==k)';
-            meanBoldPerStim(:,nu) = mean(yVals(indexToThisUniqueValue));
-            stdBoldPerStim(:,nu) = std(yVals(indexToThisUniqueValue));
+            meanBoldPerStim(:,nu) = mean(yVals(:,indexToThisUniqueValue),2);
+            stdBoldPerStim(:,nu) = std(yVals(:,indexToThisUniqueValue));
         end
         
         stimulusFreqHzFine = logspace(log10(min(stim)),log10(max(stim)),100);
         splineInterpolatedMax = max(spline(uniqueStims,meanBoldPerStim,stimulusFreqHzFine));
         % Scale the x vector so that the max is zero
         meanBoldPerStim = meanBoldPerStim ./ splineInterpolatedMax;
-        yVals = yVals ./splineInterpolatedMax;
+        scaledBOLDresponse = scaledBOLDresponse ./splineInterpolatedMax;
         myObj = @(p) sqrt(sum((meanBoldPerStim-watsonTemporalModel(uniqueStims,p)).^2));
-        x0 = [2 2 2 1];
+        x0 = [2 2 2];
         watsonParams = fmincon(myObj,x0,[],[],[],[],[],[],[], options);
         
-    
-    
     end
     
-
+   
+    
+end
 
 
 
 
     
     % Update the plot
-    if tt > 2 && showPlots
+    if tt > 1 && showPlots
         
         % Current guess at the TTF, along with stims and outcomes
 
@@ -302,17 +302,15 @@ for tt = 1:nTrials
         
         % TTF figure
         subplot(2,1,2)
-        scatter(stim(tt),yVals(tt),'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
+        scatter(stim(nonBaselineTrials),scaledBOLDresponse(nonBaselineTrials),'o','MarkerFaceColor','b','MarkerEdgeColor','none','MarkerFaceAlpha',.2)
         delete(currentFuncHandle)
         currentFuncHandle = plot(freqDomain,watsonTemporalModel(freqDomain,watsonParams),'-r');
 
         drawnow
     end
     
-    
 
-end
-    
+
 % Done with the simulation
 if verbose
     fprintf('\n');
