@@ -174,7 +174,7 @@ if isempty(thePacket.response)
     % We enforce reference coding, such that amplitude of response to the
     % stimuli is expressed relative to the response to the baseline
     % stimulus.
-    modelAmplitude = modelAmplitude - round(mean(modelAmplitude==p.Results.baselineStimulus));
+    modelAmplitude = modelAmplitude - mean(modelAmplitude==p.Results.baselineStimulus);
 
     % Scale the responses by the simulateMaxBold and place in the
     % paramMainMatrix
