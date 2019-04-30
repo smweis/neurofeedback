@@ -1,4 +1,4 @@
-function [outcomes, modelResponseStruct, thePacket, yVals] = tfeUpdate(thePacket, qpParams, stimulusVec, baselineStimulus, varargin)
+function [outcomes, modelResponseStruct, thePacket, adjustedAmplitudes] = tfeUpdate(thePacket, qpParams, stimulusVec, baselineStimulus, varargin)
 % Returns the QP outcomes given a packet and a stimulus vector.
 %
 % Syntax:
@@ -29,12 +29,12 @@ function [outcomes, modelResponseStruct, thePacket, yVals] = tfeUpdate(thePacket
 %  'headroom'             - Scalar. The proportion of the nOutcomes from 
 %                           qpParams that will be used as extra on top and
 %                           bottom.
-%  'fitMaxBOLD'           - Scalar. The value (in % change units) of the
+%  'maxBOLD'              - Scalar. The value (in % change units) of the
 %                           maximum expected response to a stimulus w.r.t.
 %                           the response to the baseline stimulus.
 %
 % Optional key/value pairs (used in simulation):
-%  'simulateMaxBOLD'      - Scalar. The value (in % change units) of the
+%  'maxBOLDSimulated'     - Scalar. The value (in % change units) of the
 %                           maximum expected response to a stimulus w.r.t.
 %                           the response to the baseline stimulus.
 %  'rngSeed'              - Numeric. By passing a seed to the random
@@ -51,7 +51,7 @@ function [outcomes, modelResponseStruct, thePacket, yVals] = tfeUpdate(thePacket
 %                           much to downsample the simulated signal.
 % 
 % Outputs:
-%   ouctomes              - 1xk vector. The outcome of each stimulus,
+%   outcomes              - 1xk vector. The outcome of each stimulus,
 %                           expressed as a integer indicating into which of
 %                           the nOutcome "bins" the response to each
 %                           stimulus fell.
@@ -129,13 +129,13 @@ p.addRequired('stimulusVec',@isnumeric);
 p.addRequired('baselineStimulus',@isscalar);
 
 % Optional params used in fitting
-p.addParameter('headroom', .1, @isnumeric);
-p.addParameter('fitMaxBOLD', 3, @isscalar);
+p.addParameter('headroom', 0.1, @isnumeric);
+p.addParameter('maxBOLD', 1.0, @isscalar);
 
 % Optional params used in simulation
-p.addParameter('simulateMaxBOLD', 3, @isscalar);
+p.addParameter('maxBOLDSimulated', 1.0, @isscalar);
 p.addParameter('rngSeed',rng(1),@isstruct);
-p.addParameter('noiseSD',0.5, @isscalar);
+p.addParameter('noiseSD',0.25, @isscalar);
 p.addParameter('pinkNoise',1, @isnumeric);
 p.addParameter('TRmsecs',800, @isnumeric);
 
@@ -168,7 +168,7 @@ if isempty(thePacket.response)
         
     % Obtain the continuous amplitude response
     for ii = 1:length(stimulusVec)        
-        modelAmplitude(ii) = qpParams.continuousPF(stimulusVec(ii));    
+        modelAmplitude(ii) = qpParams.continuousPF(stimulusVec(ii)) .* p.Results.maxBOLDSimulated;    
     end
 
     % We enforce reference coding, such that amplitude of response to the
@@ -176,9 +176,8 @@ if isempty(thePacket.response)
     % stimulus.
     modelAmplitude = modelAmplitude - mean(modelAmplitude==p.Results.baselineStimulus);
 
-    % Scale the responses by the simulateMaxBold and place in the
-    % paramMainMatrix
-    params0.paramMainMatrix = modelAmplitude.*p.Results.simulateMaxBOLD;
+    % Place the responses in the paramMainMatrix
+    params0.paramMainMatrix = modelAmplitude;
         
     % Lock the MATLAB random number generator to give us the same BOLD
     % noise on every iteration.
@@ -206,9 +205,6 @@ end
 adjustedAmplitudes = params.paramMainMatrix - ...
     mean(params.paramMainMatrix(stimulusVec==p.Results.baselineStimulus));
 
-% Convert the adjusted BOLD amplitudes into outcome bins.
-yVals = adjustedAmplitudes./p.Results.fitMaxBOLD;
-
 % Get the number of outcomes (bins)
 nOutcomes = qpParams.nOutcomes;
 
@@ -217,8 +213,11 @@ nLower = round(nOutcomes.*p.Results.headroom);
 nUpper = round(nOutcomes.*p.Results.headroom);
 nMid = nOutcomes - nLower - nUpper;
 
+% Convert the adjusted BOLD amplitudes into scaled amplitudes (0-1)
+scaledAmplitudes = adjustedAmplitudes./p.Results.maxBOLD;
+
 % Map the responses to binned outcomes
-outcomes = 1+round(yVals.*nMid)+nLower;
+outcomes = 1+round(scaledAmplitudes.*nMid)+nLower;
 outcomes(outcomes > nOutcomes)=nOutcomes;
 outcomes(outcomes < 1)=1;
 
