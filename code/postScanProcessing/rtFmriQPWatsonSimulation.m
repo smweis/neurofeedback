@@ -12,7 +12,7 @@
 %   - [processed]       : T1w, scout EPI images after BET, as well as
 %                         transformation matrices for EPI -> T1w -> MNI
 %   
-%    - (runX)           : Run-specific NIFTIs and data. 
+%    - (runX)           : Run-specific DICOMs. 
 
 
 %% Either edit these variables here, or input them each time.

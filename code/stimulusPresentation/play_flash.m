@@ -49,7 +49,7 @@ end
 
 % checkerboard pattern or full screen
 if ~exist('checkerboardSize','var')
-    checkerboardSize = 0; % seconds
+    checkerboardSize = 0; % logical
 end
 
 
@@ -102,8 +102,8 @@ params.checkerboardOrFullscreen = checkerboardSize;
 %% Set up actualStimuli.txt
 % A text file that will serve as a record for all stimuli frequencies
 % presented during this run number.
-
-fid = fopen(fullfile(subjectPath,strcat('actualStimuli',num2str(runNumber),'.txt')),'w');
+actualStimuliTextFile = strcat('actualStimuli',num2str(runNumber),'.txt');
+fid = fopen(fullfile(subjectPath,actualStimuliTextFile),'w');
 fclose(fid);
 
 %% Initial settings
@@ -224,7 +224,8 @@ try
             
             % Write the stimulus that was presented to a text file so that
             % Quest+ can see what's actually been presented. 
-            fid = fopen(fullfile(subjectPath,'actualStimuli.txt'),'a');
+            
+            fid = fopen(fullfile(subjectPath,actualStimuliTextFile),'a');
             fprintf(fid,'%d\n',stimFreq);
             fclose(fid);
             
