@@ -1,14 +1,14 @@
 function neurofeedbackLocalHook
 %  neurofeedbackLocalHook
 %
-% Configure things for working on the  neurofeedback project.
+% Configure things for working on the neurofeedback project.
 %
-% For use with the ToolboxToolbox
+% For use with the toolboxToolbox.
 %
 % As part of the setup process, ToolboxToolbox will copy this file to your
 % ToolboxToolbox localToolboxHooks directory (minus the "Template" suffix).
 % The defalt location for this would be
-%   ~/localToolboxHooks/neurofeedbackLocalHook.m
+%   ~/localHookFolder/neurofeedbackLocalHook.m
 %
 % Each time you run tbUseProject('neurofeedback'), ToolboxToolbox will
 % execute your local copy of this file to do setup.
@@ -28,6 +28,9 @@ if (ispref(projectName))
 end
 
 %% Specify base paths for materials and data
+% currentSubjectBasePath: current subject directory on the local machine. 
+% projectBasePath: directory containing neurofeedback toolbox code and data
+
 [~, userID] = system('whoami');
 userID = strtrim(userID);
 switch userID
@@ -51,18 +54,22 @@ if size(nfPool) == 0
     nfPool = parpool(8);
 end
 
-%% Try to log into the scanner computer at SC3T
+%% Try to log into the scanner computer
 
 username = 'dummy';
 password = 'dummy';
 serverIP = 'dummy';
 
+% Send a command to the system to log into the scanner computer remotely.
 command = ['mount_smbfs //' username ':' password '@' serverIP filesep 'mnt' filesep 'rtexport'];
-
 status = system(command);
+
+% If there is no error, status == 0, set the scannerBasePath.
 if status == 0
     scannerBasePath = [filesep 'Volumes' filesep 'rtexport' filesep 'RTexport_Current' filesep];
-  
+    
+% If status is something else, scannerBasePath defaults to a local folder
+% used for testing.
 else
     warning('No server access.');
     scannerBasePath = [projectBasePath filesep 'test_data' filesep 'fake_dicoms' filesep 'copy_into' filesep];
@@ -70,6 +77,8 @@ end
 
 
 %% Specify where output goes
+% These prefs are used by the real-time fMRI pipeline and are all on the
+% local machine. 
 
 if ismac
     % Code to run on Mac plaform
@@ -87,10 +96,7 @@ if ismac
 
 elseif isunix
     % Code to run on Linux plaform
-    setpref(projectName,'analysisScratchDir',[filesep 'tmp' filesep 'neurofeedback']);
-    setpref(projectName,'projectRootDir',[filesep 'Users' filesep ,userID, filesep 'Documents' filesep 'Matlab',projectName]);
-    setpref(projectName,'currentSubjectBasePath', currentSubjectBasePath);
-    
+    warning('No support for Linux')
 elseif ispc
     % Code to run on Windows platform
     warning('No support for PC')
