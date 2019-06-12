@@ -72,7 +72,7 @@ if status == 0
 % used for testing.
 else
     warning('No server access.');
-    scannerBasePath = [projectBasePath filesep 'test_data' filesep 'fake_dicoms' filesep 'copy_into' filesep];
+    scannerBasePath = currentSubjectBasePath;
 end
 
 
