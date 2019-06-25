@@ -1,4 +1,81 @@
-function play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
+function runStimulusSequence(subject,run,varargin)
+
+% Run the stimulus sequence at the scanner. 
+%
+% Syntax:
+%   nextStim = runRealtimeQuestTFE(subject,run,atScanner,varargin)
+%
+% Description:
+%	
+%
+% Inputs:
+%   subject                 - String. The name/ID of the subject. 
+%   run                     - String. The run or acquisition number. 
+
+
+% Optional key/value pairs:
+%   checkerboardSize        - Int. size of the tiles of a checkerboard. If = 0,
+%                             full screen flash (default - 60). 60 is a 
+%                             good option for a 1080 x 1920 display
+%   allFreqs                - Vector. Frequencies from which to sample, in
+%                             hertz.
+%   blockDur                - Scalar. Duration of stimulus blocks   (default = 12   [seconds])
+%   scanDur                 - Scalar. duration of total run (default = 336 seconds)
+%   displayDistance         - Scalar. 106.5; % distance from screen (cm) - (UPenn - SC3T);
+%   displayWidth            - Scalar. 69.7347; % width of screen (cm) - (UPenn - SC3T);
+%   displayHeight           - Scalar. 39.2257; % height of screen (cm) - (UPenn - SC3T);
+%   baselineTrialFrequency  - Int. how frequently a baseline trial occurs
+%   tChar                   - String. Letter used for a trigger. 
+%
+%
+% Outputs:
+
+
+
+
+%   Written by Andrew S Bock Jul 2016
+%   Modified by Steven M Weisberg Jan 2019
+
+% Examples:
+
+%{
+
+subject = 'Ozzy_Test';
+run = '1';
+runStimulusSequence(subject,run,varargin)
+% 
+%}
+
+%% Parse input
+p = inputParser;
+
+% Required input
+p.addRequired('subject',@isstr);
+p.addRequired('run',@isstr);
+
+% Optional params
+p.addParameter('checkerboardSize',60,@isnumeric); % 60 = checker; 0 = screen flash
+p.addParameter('allFreqs',[1.875,3.75,7.5,15,30],@isvector);
+p.addParameter('blockDur',12,@isnumeric);
+p.addParameter('scanDur',360,@isnumeric);
+p.addParameter('displayDistance',106.5,@isnumeric);
+p.addParameter('displayWidth',69.7347,@isnumeric);
+p.addParameter('displayHeight',39.2257,@isnumeric);
+p.addParameter('baselineTrialFrequency',6,@isnumeric);
+p.addParameter('tChar','t',@isstr);
+
+% Parse
+p.parse( subject, run, atScanner, model, varargin{:});
+
+display = struct;
+display.distance = p.Results.displayDistance;
+display.width = p.Results.displayWidth;
+display.height = p.Results.displayHeight;
+
+%% Get Relevant Paths
+
+[subjectPath, scannerPath, ~, ~] = getPaths(subject);
+
 
 
 %% TO DO BEFORE WE RUN THIS AGAIN
@@ -12,80 +89,6 @@ function play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,sca
     %       scannerPath where scannerPath is a directory on the actual scanner
     %       computer. 
     
-
-
-%% Displays a black/white full-field flicker
-%
-%   Usage:
-%   play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,scanDur,baselineTrialFrequency,display)
-%
-%   Required inputs:
-%   runNumber               - which run. To determine save data. 
-%
-%   Defaults:
-%   allFreqs                - the domain of possible frequencies to present
-%   subjectPath             - passed from default for
-%                               tbUseProject('neurofeedback') (default - test subject)
-%   checkerboardSize        - size of the tiles of a checkerboard. If = 0,
-%                               full screen flash (default - 0). 60 is a 
-%                               good option for a 1080 x 1920 display
-%   blockDur                - duration of stimulus blocks   (default = 12   [seconds])
-%   scanDur                 - duration of total run (default = 336 seconds)
-%   display.distance        - 106.5; % distance from screen (cm) - (UPenn - SC3T);
-%   display.width           - 69.7347; % width of screen (cm) - (UPenn - SC3T);
-%   display.height          - 39.2257; % height of screen (cm) - (UPenn - SC3T);
-%   baselineTrialFrequency  - how frequently a baseline trial occurs
-
-%   Stimulus will flicker at 'stimFreq', occilating between flicker and
-%   grey screen based on 'blockDur'
-%
-%   Written by Andrew S Bock Jul 2016
-%   Modified by Steven M Weisberg Jan 2019
-
-%% Set defaults
-
-if ~exist('allFreqs','var') || isempty(allFreqs)
-    allFreqs = [1.875,3.75,7.5,15,30];
-end
-
-% block duration
-if ~exist('blockDur','var')
-    blockDur = 12; % seconds
-end
-
-
-% checkerboard pattern or full screen
-if ~exist('checkerboardSize','var')
-    checkerboardSize = 0; % logical
-end
-
-
-% run duration
-if ~exist('scanDur','var')
-    scanDur = 360;
-end
-
-% scanner trigger
-if ~exist('tChar','var') || isempty(tChar)
-    tChar = {'t'};
-end
-
-% display parameters
-if ~exist('display','var') || isempty(display)
-    display.distance = 106.5; % distance from screen (cm) - (UPenn - SC3T);
-    display.width = 69.7347; % width of screen (cm) - (UPenn - SC3T);
-    display.height = 39.2257; % height of screen (cm) - (UPenn - SC3T);
-end
-
-
-% how often baseline trials occur
-if ~exist('baselineTrialFrequency','var')
-    baselineTrialFrequency = 6;
-end
-
-if ~exist('subjectPath','var') || isempty(subjectPath)
-    [subjectPath] = getPaths('TOME_3040_TEST');
-end
 
 
 %% Debugging?
@@ -103,15 +106,15 @@ end
 
 
 %% Save input variables
-params.stimFreq                 = nan(1,scanDur/blockDur);
+params.stimFreq                 = nan(1,p.Results.scanDur/p.Results.blockDur);
 params.trialTypeStrings         = cell(1,length(params.stimFreq));
-params.allFreqs                 = allFreqs;
-params.checkerboardOrFullscreen = checkerboardSize;
+params.p.Results.allFreqs       = p.Results.allFreqs;
+params.checkerboardOrFullscreen = p.Results.checkerboardSize;
 
 %% Set up actualStimuli.txt
 % A text file that will serve as a record for all stimuli frequencies
 % presented during this run number.
-actualStimuliTextFile = strcat('actualStimuli',num2str(runNumber),'.txt');
+actualStimuliTextFile = strcat('actualStimuli',run,'.txt');
 fid = fopen(fullfile(subjectPath,actualStimuliTextFile),'w');
 fclose(fid);
 
@@ -156,12 +159,12 @@ fix_dot                         = angle2pix(display,0.25); % For fixation cross 
 %% Make images
 greyScreen = grey*ones(fliplr(display.resolution));
 
-if checkerboardSize == 0
+if p.Results.checkerboardSize == 0
     texture1 = black*ones(fliplr(display.resolution));
     texture2 = white*ones(fliplr(display.resolution));
 else
-    texture1 = double(checkerboard(checkerboardSize/2,res.height/checkerboardSize,res.width/checkerboardSize)>.5);
-    texture2 = double(checkerboard(checkerboardSize/2,res.height/checkerboardSize,res.width/checkerboardSize)<.5);
+    texture1 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)>.5);
+    texture2 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)<.5);
 end
 
 Texture(1) = Screen('MakeTexture', winPtr, texture1);
@@ -178,7 +181,7 @@ ListenChar(2);
 HideCursor;
 disp('Ready, waiting for trigger...');
 
-startTime = wait4T(tChar);  %wait for 't' from scanner.
+startTime = wait4T(p.Results.tChar);  %wait for 't' from scanner.
 
 %% Drawing Loop
 breakIt = 0;
@@ -192,12 +195,12 @@ disp(['Trigger received - ' params.startDateTime]);
 blockNum = 0;
 
 % randomly select a stimulus frequency to start with 
-whichFreq = randi(length(allFreqs));
-stimFreq = allFreqs(whichFreq);
+whichFreq = randi(length(p.Results.allFreqs));
+stimFreq = p.Results.allFreqs(whichFreq);
 
 try
-    while elapsedTime < scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
-        thisBlock = ceil(elapsedTime/blockDur);
+    while elapsedTime < p.Results.scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
+        thisBlock = ceil(elapsedTime/p.Results.blockDur);
         
         
         % If the block time has elapsed, then time to pick a new stimulus
@@ -206,7 +209,7 @@ try
             blockNum = thisBlock;
             
             % Every sixth block, set stimFreq = 0. Will display gray screen
-            if mod(blockNum,baselineTrialFrequency) == 1 
+            if mod(blockNum,p.Results.baselineTrialFrequency) == 1 
                 trialTypeString = 'baseline';
                 stimFreq = 0;
             
@@ -224,11 +227,11 @@ try
                 fclose(readFid);
             
             % If there's no Quest+ recommendation yet, randomly pick a
-            % frequency from allFreqs. 
+            % frequency from p.Results.allFreqs. 
             else 
                 trialTypeString = 'random';
-                whichFreq = randi(length(allFreqs));
-                stimFreq = allFreqs(whichFreq);
+                whichFreq = randi(length(p.Results.allFreqs));
+                stimFreq = p.Results.allFreqs(whichFreq);
             end
             
             % Write the stimulus that was presented to a text file so that
@@ -278,7 +281,7 @@ try
     
     % Close screen and save data. 
     sca;
-    save(fullfile(subjectPath,strcat('stimFreqData_Run',num2str(runNumber),'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
+    save(fullfile(subjectPath,strcat('stimFreqData_Run',run,'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     disp(['elapsedTime = ' num2str(elapsedTime)]);
     ListenChar(1);
     ShowCursor;
@@ -286,7 +289,7 @@ try
     
 catch ME
     Screen('CloseAll');
-    save(fullfile(subjectPath,strcat('stimFreqData_Run',num2str(runNumber))),'params');
+    save(fullfile(subjectPath,strcat('stimFreqData_Run',run)),'params');
     ListenChar;
     ShowCursor;
     rethrow(ME);

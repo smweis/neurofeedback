@@ -55,23 +55,22 @@ if size(nfPool) == 0
 end
 
 %% Try to log into the scanner computer
-
+% At Penn, get this information from Mark Elliot
 username = 'dummy';
 password = 'dummy';
 serverIP = 'dummy';
 
-% Send a command to the system to log into the scanner computer remotely.
-command = ['mount_smbfs //' username ':' password '@' serverIP filesep 'mnt' filesep 'rtexport'];
-status = system(command);
+mountPoint = '/tmp/realTime';
+mkdir(mountPoint);
+command = ['mount -t smbfs //' username ':' password '@' serverIP filesep 'rtexport ' mountPoint];
 
-% If there is no error, status == 0, set the scannerBasePath.
+status = system(command);
 if status == 0
-    scannerBasePath = [filesep 'Volumes' filesep 'rtexport' filesep 'RTexport_Current' filesep];
-    
-% If status is something else, scannerBasePath defaults to a local folder
-% used for testing.
+    fprintf(strcat('Success, server mounted at: ',mountPoint));
+    scannerBasePath = [mountPoint filesep 'RTexport_Current' filesep];
+  
 else
-    warning('No server access.');
+    fprintf('No server access. Test data path enabled.');
     scannerBasePath = currentSubjectBasePath;
 end
 
