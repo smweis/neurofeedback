@@ -2,10 +2,16 @@ function play_flash(runNumber,subjectPath,checkerboardSize,allFreqs,blockDur,sca
 
 
 %% TO DO BEFORE WE RUN THIS AGAIN
-    % Change the way baseline trials are handled so that we can use 200 as
-    % a "detect baseline". 
-    % Perhaps also ensure that we present a baseline trial every X trials,
-    % if one has not already been presented by Quest+
+    %1.  Change the way baseline trials are handled so that we can use 200 as
+    %       a "detect baseline". 
+    %2.  Perhaps also ensure that we present a baseline trial every X trials,
+    %       if one has not already been presented by Quest+
+    %3.  Change where actualStimuli.txt is stored.
+    %4.  Change where nextStimuli[num].txt is stored. 
+    %5.  Both 3 and 4 could be solved by changing subjectPath to some
+    %       scannerPath where scannerPath is a directory on the actual scanner
+    %       computer. 
+    
 
 
 %% Displays a black/white full-field flicker

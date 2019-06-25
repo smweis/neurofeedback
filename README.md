@@ -27,14 +27,14 @@ The best way to install and use the `neurofeedback` tools is to install `toolbox
 
 Recommended directory structure:
 
--rtQuest
-  -KastnerParcels
-  -subject1
-  -subject2
-    -raw
-    -processed
-      -run1
-      -run2
+- rtQuest
+  - KastnerParcels  
+  - subject1  
+  - subject2
+    - raw
+    - processed
+      - run1
+      - run2
 
 
 Top level is project-specific. (`rtQuest`)
@@ -61,7 +61,7 @@ Acquire an ROI. Any ROI will work.
 
 `makeMaskFromRetino.m` creates a retinotopic mask from functional data. Unless you collected this specifically for your subject as part of a separate scan, it is unlikely that you can use it.
 
-`register_ROI_to_APandPA.sh` will register the ROI (the way it's set up now will take a Kastner V1 parcel and register it to the first volume).
+`register_ROI_to_APandPA.sh` will register the ROI (the way it's set up now will take a Kastner V1 parcel and register it to a scout EPI or an SBREF).
 
 At the end, you should have an ROI registered to EPI space that can be used in `runNeurofeedback.m`. Specifically `runNeurofeedback.m` will call `registerToFirstDICOM.m`.
 
