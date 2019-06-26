@@ -1,21 +1,21 @@
 function runStimulusSequence(subject,run,varargin)
 
-% Run the stimulus sequence at the scanner. 
+% Run the stimulus sequence at the scanner.
 %
 % Syntax:
 %   nextStim = runRealtimeQuestTFE(subject,run,atScanner,varargin)
 %
 % Description:
-%	
+%
 %
 % Inputs:
-%   subject                 - String. The name/ID of the subject. 
-%   run                     - String. The run or acquisition number. 
+%   subject                 - String. The name/ID of the subject.
+%   run                     - String. The run or acquisition number.
 
 
 % Optional key/value pairs:
 %   checkerboardSize        - Int. size of the tiles of a checkerboard. If = 0,
-%                             full screen flash (default - 60). 60 is a 
+%                             full screen flash (default - 60). 60 is a
 %                             good option for a 1080 x 1920 display
 %   allFreqs                - Vector. Frequencies from which to sample, in
 %                             hertz.
@@ -25,7 +25,7 @@ function runStimulusSequence(subject,run,varargin)
 %   displayWidth            - Scalar. 69.7347; % width of screen (cm) - (UPenn - SC3T);
 %   displayHeight           - Scalar. 39.2257; % height of screen (cm) - (UPenn - SC3T);
 %   baselineTrialFrequency  - Int. how frequently a baseline trial occurs
-%   tChar                   - String. Letter used for a trigger. 
+%   tChar                   - String. Letter used for a trigger.
 %
 %
 % Outputs:
@@ -40,10 +40,19 @@ function runStimulusSequence(subject,run,varargin)
 
 %{
 
+1. Sanity Check
+subject = 'Ozzy_Test';
+run = '0';
+checkerboardSize = 0;
+allFreqs = 15;
+baselineTrialFrequency = 2;
+runStimulusSequence(subject,run,'checkerboardSize',checkerboardSize,'allFreqs',allFreqs,'baselineTrialFrequency',baselineTrialFrequency);
+
+1. Q+ Setup
 subject = 'Ozzy_Test';
 run = '1';
-runStimulusSequence(subject,run,varargin)
-% 
+runStimulusSequence(subject,run)
+%
 %}
 
 %% Parse input
@@ -80,20 +89,20 @@ display.height = p.Results.displayHeight;
 
 %% TO DO BEFORE WE RUN THIS AGAIN
     %1.  Change the way baseline trials are handled so that we can use 200 as
-    %       a "detect baseline". 
+    %       a "detect baseline".
     %2.  Perhaps also ensure that we present a baseline trial every X trials,
     %       if one has not already been presented by Quest+
     %3.  Change where actualStimuli.txt is stored.
-    %4.  Change where nextStimuli[num].txt is stored. 
+    %4.  Change where nextStimuli[num].txt is stored.
     %5.  Both 3 and 4 could be solved by changing subjectPath to some
     %       scannerPath where scannerPath is a directory on the actual scanner
-    %       computer. 
-    
+    %       computer.
+
 
 
 %% Debugging?
 % This will make the window extra small so you can test while still looking
-% at the code. 
+% at the code.
 debug = 0;
 
 if debug
@@ -194,29 +203,29 @@ elapsedTime = 0;
 disp(['Trigger received - ' params.startDateTime]);
 blockNum = 0;
 
-% randomly select a stimulus frequency to start with 
+% randomly select a stimulus frequency to start with
 whichFreq = randi(length(p.Results.allFreqs));
 stimFreq = p.Results.allFreqs(whichFreq);
 
 try
     while elapsedTime < p.Results.scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
         thisBlock = ceil(elapsedTime/p.Results.blockDur);
-        
-        
+
+
         % If the block time has elapsed, then time to pick a new stimulus
-        % frequency. 
+        % frequency.
         if thisBlock > blockNum
             blockNum = thisBlock;
-            
+
             % Every sixth block, set stimFreq = 0. Will display gray screen
-            if mod(blockNum,p.Results.baselineTrialFrequency) == 1 
+            if mod(blockNum,p.Results.baselineTrialFrequency) == 1
                 trialTypeString = 'baseline';
                 stimFreq = 0;
-            
+
             % If it's not the 6th block, then see if Quest+ has a
-            % recommendation for which stimulus frequency to present next. 
+            % recommendation for which stimulus frequency to present next.
             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*')))
-                
+
                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
                 [~,idx] = max([d.datenum]);
                 filename = d(idx).name;
@@ -225,71 +234,71 @@ try
                 readFid = fopen(fullfile(subjectPath,'stimLog',filename),'r');
                 stimFreq = fscanf(readFid,'%d');
                 fclose(readFid);
-            
+
             % If there's no Quest+ recommendation yet, randomly pick a
-            % frequency from p.Results.allFreqs. 
-            else 
+            % frequency from p.Results.allFreqs.
+            else
                 trialTypeString = 'random';
                 whichFreq = randi(length(p.Results.allFreqs));
                 stimFreq = p.Results.allFreqs(whichFreq);
             end
-            
+
             % Write the stimulus that was presented to a text file so that
-            % Quest+ can see what's actually been presented. 
-            
+            % Quest+ can see what's actually been presented.
+
             fid = fopen(fullfile(subjectPath,actualStimuliTextFile),'a');
             fprintf(fid,'%d\n',stimFreq);
             fclose(fid);
-            
+
             % Print the last trial info to the terminal and save it to
-            % params. 
+            % params.
             disp(['Trial Type - ' trialTypeString]);
             disp(['Trial Number - ' num2str(blockNum) '; Frequency - ' num2str(stimFreq)]);
-            
+
             params.stimFreq(thisBlock) = stimFreq;
             params.trialTypeStrings{thisBlock} = trialTypeString;
-            
+
         end
-        
-     
+
+
         % We will handle stimFreq = 0 different to just present a gray
-        % screen. If it's not zero, we'll flicker. 
+        % screen. If it's not zero, we'll flicker.
         % The flicker case:
-        if stimFreq ~= 0 
+        if stimFreq ~= 0
             if (elapsedTime - curFrame) > (1/(stimFreq*2))
                 frameCt = frameCt + 1;
                 Screen( 'DrawTexture', winPtr, Texture( mod(frameCt,2) + 1 )); % current frame
                 Screen('Flip', winPtr);
                 curFrame = GetSecs - startTime;
             end
-        % The gray screen case. 
-        else 
+        % The gray screen case.
+        else
             Screen( 'DrawTexture', winPtr, Texture( 3 )); % gray screen
             Screen('Flip', winPtr);
         end
-        
-        
-        
+
+
+
         % update timers
         elapsedTime = GetSecs-startTime;
         params.endDateTime = datestr(now);
         % check to see if the "esc" button was pressed
         breakIt = escPressed(keybs);
         WaitSecs(0.001);
-        
+
     end
-    
-    % Close screen and save data. 
+
+    % Close screen and save data.
     sca;
     save(fullfile(subjectPath,strcat('stimFreqData_Run',run,'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     disp(['elapsedTime = ' num2str(elapsedTime)]);
     ListenChar(1);
     ShowCursor;
     Screen('CloseAll');
-    
+
 catch ME
     Screen('CloseAll');
-    save(fullfile(subjectPath,strcat('stimFreqData_Run',run)),'params');
+    save(fullfile(subjectPath,strcat('stimFreqData_Run',run)),datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     ListenChar;
     ShowCursor;
     rethrow(ME);
