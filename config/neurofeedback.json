@@ -37,7 +37,8 @@
 		"type": "include",
 		"update": "",
 		"url": ""
-	},	{
+	},
+	{
 		"flavor": "",
 		"hook": "",
 		"importance": "",
@@ -49,6 +50,19 @@
 		"type": "git",
 		"update": "",
 		"url": "https://github.com/Psychtoolbox-3/Psychtoolbox-3.git"
+	},
+	{
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "BADS",
+		"pathPlacement": "append",
+		"subfolder": "BADS",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": "https:\/\/github.com\/lacerbi\/bads"
 	},
  	{
 		"flavor": "",
