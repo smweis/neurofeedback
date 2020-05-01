@@ -56,13 +56,13 @@
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
-		"name": "BADS",
+		"name": "bads",
 		"pathPlacement": "append",
-		"subfolder": "BADS",
+		"subfolder": "",
 		"toolboxRoot": "",
 		"type": "git",
 		"update": "",
-		"url": "https:\/\/github.com\/lacerbi\/bads"
+		"url": "https:\/\/github.com\/lacerbi\/bads.git"
 	},
  	{
 		"flavor": "",
