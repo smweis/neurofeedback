@@ -16,5 +16,14 @@ Note: the Bayesian Adaptive search package appears to require being added in ful
 ```
 srun --mem=4gb --time=08:00:00 --pty bash -i
 ml matlab
-./doeSimulate 1.05 .01 .06 1.00 .4 800 12 false 1
+./doeSimulate 1.05 .01 .06 1.00 .4 800 12 1 1
+```
+
+7.  To run a batch:
+compiledDoe should have sample scripts: `deploy_sim.sh` and `sim_wrapper.sh`
+`deploy_sim.sh` will call sbatch once to run the doeSimulate compiled on the cluster.
+`sim_wrapper.sh` will call `deploy_sim.sh` with a number of jobs (sleeping .1 seconds between each
+  call to ensure the rng in matlab receives a slightly different time stamp).
+```
+bash sim_wrapper.sh
 ```
