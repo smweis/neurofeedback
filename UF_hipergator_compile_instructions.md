@@ -8,22 +8,17 @@ Suggested: `/ufrc/stevenweisberg/stevenweisberg/qpFmriResults/compiled[date]`
 5. Load the project with ToolboxToolbox and compile the code.
 ```
   tbUseProject('neurofeedback');
-  mcc -R -singleCompThread -d /ufrc/stevenweisberg/stevenweisberg/qpFmriResults/compiled[date] -m simulate.m -a ../../toolboxes/bads/
+  mcc -R -singleCompThread -d /ufrc/stevenweisberg/stevenweisberg/qpFmriResults/compiled[date] -m compiledSimulate.m -a ../../toolboxes/bads/
 ```
 Note: the Bayesian Adaptive search package appears to require being added in full, otherwise it does not load all required functions to the compiled version.
 
-6.  To test it, start a srun session:
-```
-srun --mem=4gb --time=08:00:00 --pty bash -i
-ml matlab
-./simulate doeTemporalModel  [VARARGIN]
-```
-
-7.  To run a batch:
+7.  To run a batch - positional arguments can be provided in sim_wrapper.sh IF they differ. Otherwise, they should be specified in deploy_sim.sh
 /code/qpfMRI/bash should have sample scripts: `deploy_sim.sh` and `sim_wrapper.sh`
 `deploy_sim.sh` will call sbatch once to run the doeSimulate compiled on the cluster.
 `sim_wrapper.sh` will call `deploy_sim.sh` with a number of jobs (sleeping .1 seconds between each
   call to ensure the rng in matlab receives a slightly different time stamp).
 ```
+cp /ufrc/stevenweisberg/stevenweisberg/MATLAB/projects/neurofeedback/code/qpfMRI/bash/deploy_sim.sh
+cp /ufrc/stevenweisberg/stevenweisberg/MATLAB/projects/neurofeedback/code/qpfMRI/bash/sim_wrapper.sh
 bash sim_wrapper.sh
 ```
