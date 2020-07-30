@@ -82,13 +82,13 @@
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
-		"name": "dicm2nii",
+		"name": "dicm2niix",
 		"pathPlacement": "append",
 		"subfolder": "",
 		"toolboxRoot": "",
-		"type": "webget",
+		"type": "git",
 		"update": "",
-		"url": "https:\/\/www.mathworks.com\/matlabcentral\/mlc-downloads\/downloads\/e5a13851-4a80-11e4-9553-005056977bd0\/80e748a3-0ae1-48a5-a2cb-b8380dac0232\/packages\/zip"
+		"url": "https:\/\/www.github.com\/rordenlab\/dcm2niix"
 	},
 {
 		"flavor": "",
@@ -108,7 +108,7 @@
 		"hook": "",
 		"importance": "optional",
 		"localHookTemplate": "",
-		"name": "distcomp",
+		"name": "parallel",
 		"pathPlacement": "append",
 		"subfolder": "",
 		"toolboxRoot": "",
