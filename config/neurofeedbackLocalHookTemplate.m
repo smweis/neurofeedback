@@ -95,7 +95,14 @@ if ismac
 
 elseif isunix
     % Code to run on Linux plaform
-    warning('No support for Linux')
+    setpref(projectName,'analysisScratchDir',[filesep 'tmp' filesep 'neurofeedback']);
+    setpref(projectName,'projectRootDir',projectBasePath);
+    setpref(projectName,'currentSubjectBasePath', currentSubjectBasePath);
+    setpref(projectName,'scannerBasePath',scannerBasePath);
+    % Load packages for data analysis on Hipergator. 
+    system('module load mricrogl');
+    system('module load fsl');
+    
 elseif ispc
     % Code to run on Windows platform
     warning('No support for PC')
