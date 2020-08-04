@@ -40,9 +40,11 @@ switch userID
     case {'stevenweisberg'}
         currentSubjectBasePath = [filesep 'blue' filesep, userID filesep 'rtQuest'];
         projectBasePath = [filesep 'blue' filesep userID filesep userID filesep 'MATLAB' filesep 'projects' filesep projectName];
+        analysisScratchDir = fullfile('blue','stevenweisberg',userID,'analysisScratch');
     otherwise
-        currentSubjectBasePath = [filesep 'blue' filesep, userID filesep 'rtQuest'];
-        projectBasePath = [filesep 'blue' filesep userID filesep userID filesep 'MATLAB' filesep 'projects' filesep projectName];
+        currentSubjectBasePath = [filesep 'blue' filesep, 'stevenweisberg' filesep 'rtQuest'];
+        projectBasePath = [filesep 'blue' filesep 'stevenweisberg' filesep userID filesep 'MATLAB' filesep 'projects' filesep projectName];
+        analysisScratchDir = fullfile('blue','stevenweisberg',userID,'analysisScratch');
 end
 
 
@@ -97,6 +99,10 @@ if ismac
 
 elseif isunix
     % Code to run on Linux plaform
+    setpref(projectName,'analysisScratchDir',analysisScratchDir);
+    setpref(projectName,'projectRootDir',projectBasePath);
+    setpref(projectName,'currentSubjectBasePath', currentSubjectBasePath);
+    setpref(projectName,'scannerBasePath',scannerBasePath);
     
     % Load packages for data analysis on Hipergator. 
     system('module load mricrogl');
