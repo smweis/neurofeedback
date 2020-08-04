@@ -40,11 +40,11 @@ switch userID
     case {'stevenweisberg'}
         currentSubjectBasePath = [filesep 'blue' filesep, userID filesep 'rtQuest'];
         projectBasePath = [filesep 'blue' filesep userID filesep userID filesep 'MATLAB' filesep 'projects' filesep projectName];
-        analysisScratchDir = fullfile('blue','stevenweisberg',userID,'analysisScratch');
+        analysisScratchDir = [filesep 'blue' filesep 'stevenweisberg' filesep userID filesep 'analysisScratch'];
     otherwise
         currentSubjectBasePath = [filesep 'blue' filesep, 'stevenweisberg' filesep 'rtQuest'];
         projectBasePath = [filesep 'blue' filesep 'stevenweisberg' filesep userID filesep 'MATLAB' filesep 'projects' filesep projectName];
-        analysisScratchDir = fullfile('blue','stevenweisberg',userID,'analysisScratch');
+        analysisScratchDir = [filesep 'blue' filesep 'stevenweisberg' filesep userID filesep 'analysisScratch'];
 end
 
 
