@@ -1,48 +1,44 @@
 ---
-title             : "The title"
-shorttitle        : "Title"
-
-author: 
-  - name          : "Steven M. Weisberg"
-    affiliation   : "1"
-    corresponding : yes    # Define only one corresponding author
-    address       : "945 Center Dr., Gainesville, FL 32611"
-    email         : "stevenweisberg@ufl.edu"
-  - name          : "Geoffrey K. Aguirre"
-    affiliation   : "2"
-
+title: 'QpFMRI: Bayesian adaptive stimulus presentation for real-time fMRI'
+author:
+- address: 945 Center Dr., Gainesville, FL 32611
+  affiliation: '1'
+  corresponding: yes
+  email: stevenweisberg@ufl.edu
+  name: Steven M. Weisberg
+- affiliation: '2'
+  name: Geoffrey K. Aguirre
 affiliation:
-  - id            : "1"
-    institution   : "University of Florida"
-  - id            : "2"
-    institution   : "University of Pennsylvania"
-
+- id: '1'
+  institution: University of Florida
+- id: '2'
+  institution: University of Pennsylvania
+output:
+  papaja::apa6_pdf: default
+  papaja::apa6_word: default
+bibliography: qpfmri.bib
+classoption: man
+documentclass: apa6
+draft: no
+figsintext: yes
+figurelist: no
+footnotelist: no
+header-includes:
+- \usepackage{setspace}
+- \captionsetup[figure]{font={stretch=1,scriptsize}}
+- \usepackage{amsmath}
+keywords: adaptive stimulation, fMRI, Quest+, real-time fMRI, vision neuroscience
+linenumbers: yes
+mask: no
 authornote: |
-  Add complete departmental affiliations for each author here. Each new line herein must be indented, like this line.
-
-  Enter author note here.
-
+  Steven M. Weisberg, University of Florida, Department of Psychology
+  Geoffrey K. Aguirre, University of Pennsylvania, Department of Neurology, Center for Cognitive Neuroscience.
+  Pre-print submitted for peer review.
+shorttitle: Bayesian adaptive fMRI
+tablelist: no
 abstract: |
-  Test text here.
-  
-  <!-- https://tinyurl.com/ybremelq -->
-  
-keywords          : "keywords"
-wordcount         : "X"
-
-bibliography      : ["qpfmri.bib"]
-
-floatsintext      : no
-figurelist        : no
-tablelist         : no
-footnotelist      : no
-linenumbers       : yes
-mask              : no
-draft             : no
-
-documentclass     : "apa6"
-classoption       : "man"
-output            : papaja::apa6_word
+  QUEST+ [Q+, @watsonQUESTGeneralMultidimensional2017] is an adaptive stimulus selection approach that works to minimize uncertainty in a parameterized model of the responses. Unlike random stimulus selection, Q+ stimulus selection dynamically select the next stimulus based upon the prior responses of the subject, and an underlying stimulus-response model. While this approach has been successful in behavioral experiments, to use Q+ in BOLD fMRI experiments, experimenters require a 'real-time' measure of the BOLD response to stimuli as they are presented and solutions that address idiosyncracies of the BOLD signal. We have created a software toolbox that 1) extracts (or simulates) the BOLD fMRI signal from a brain region as imaging volumes are acquired, 2) cleans and fits the growing time-series to estimate the response on each trial, and 3) applies Q+ to the responsees to select the next stimulus. In simulations that model empirical data for a simple visual contrast experiment featuring stimuli of varying visual contrast values, we found that Q+ stimulus selection recovers model parameters more accurately than random stimulus selection. We report the results of stimulus selection approaches on simulated data, as well as how to optimize experimental parameters (e.g., TR, trial length) to improve model fit. In addition, we describe our solutions to the technical challenges posed by adapting Q+ for fMRI data, describe the codebase we have written to implement the solution, and present sample uses for Q+ stimulus selection in future real-time BOLD fMRI experiments.
+wordcount: X
 ---
 
 ```{r setup, include = FALSE}
@@ -55,19 +51,85 @@ set.seed(42)
 knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
 ```
 
+<!-- Comments like so -->
+<!-- Citations like so [@heunisQualityDenoisingReal2020] -->
+
+Introductory text placeholder. 
+
+## General background of the problem
+
+## Specific problem to be solved
+
+## Here we ...
+
+# Method
+## Approach
+<!-- Something to consider: when to introduce a specific psychophysical model vs. to speak in generalities -->
+  As a proof of principle, we selected to model primary visual cortical function using a logistic model (Equation 1). We selected this model because it is relatively simple (only two parameters vary between 0 and 1) and because it can be used to model a neurometric function. That is, a logistic function can model the increasing neural signal in response to an increase in stimulus contrast. Let *slope* equal the slope of the curve at the semi-saturation point. Let *semiSat* equal the point on the x-axis at which the y-axis reaches 50%.Let $x_0$ be the value of a stimulus. Then, the logistic function is defined as:
+  \begin{equation}
+  y_0 = 1-\frac{1}{(e^{(slope*(x_0-semiSat)})}
+  \end{equation}
+  Our overall aim was to develop a closed-loop pipeline, starting from known model parameters and resulting in an estimate of those same parameters from simulated BOLD fMRI data. The broad steps were as follows. 1) Select a set of model parameters for the logistic function. 2) Simulate BOLD fMRI data in response to stimuli based on the known model parameters. 3) Model the (noisy) BOLD fMRI data to obtain estimates of the BOLD response for each trial. 4) Select the next stimulus based on either random stimulus selection (control) or applying Q+ to the responses.
+  In developing simulations to achieve this goal, we solve several problems in applying Q+ to BOLD fMRI data. To wit: BOLD fMRI data are (1) continuous, (2) noisy, (3) unitless, (4) have a maximum response that is unknown *a priori* and (5) are subject to low-frequency temporal variation. We address each of these in turn, but first provide a general overview of Q+. 
+  
+## Quest +
+  Q+ [@davidh.brainardMQUESTPlusMatlabImplementation2017; @watsonQUESTGeneralMultidimensional2017] is a multidimensional Bayesian method for adaptive stimulus presentation. Q+ operates by computing the conditional probability of a behavioral outcome for each set of stimulus parameters. Q+ is a generalization on QUEST [@watsonQuestBayesianAdaptive1983], which estimates a psychometric function on the basis of a single stimulus dimension and provides an adaptive testing procedure to fit the function. Whereas QUEST could only compute one stimulus dimension, one psychometric function parameter, and two outcome measures, Q+ allows for multiple stimulus dimensions, psychometric parameters, and many outcome measures. Here, we further expand Q+ to model the BOLD fMRI signal based on a neurometric function, which fits stimulus dimensions to changes in the BOLD response. To help explain, we contrast a BOLD fMRI experiment with a color categorization behavioral experiment. In the color category experiment, a participant is presented with one patch of color of varying wavelengths at a time and must select which color category (e.g., red, blue, green, or yellow), the color belongs to.
+
+### Challenge 1: The BOLD signal is continuous
+  Q+ operates over discrete categorical outcomes, such as selecting amongst a set of color names for a stimulus. For stimuli in the middle of the red spectrum, roughly 100% of responses will be "red." But as the color patch drifts closer to yellow, this percentage will decrease. But the 'outcomes' for the BOLD fMRI signal are continuous. There is no principled way to divide the BOLD signal up into categories, and arbitrarily small categories will increase computation time dramatically. To solve this, we define a set of, for example, 51 outcome categories onto which we map the amplitude of the BOLD response. 
+
+### Challenge 2: The BOLD signal is noisy and outcomes are sparse
+  Q+ esimtates parameters of a function that predict the proportion of trial outcomes that fall in each category. For example, from wavelength (the stimulus dimension) Q+ will generate a prediction for the percentage of trials that will be described as red, green, blue, or yellow. Although there is uncertainty in the response over trials (i.e., presented with the same wavelength patch, participants will sometimes call the color red and other times call the color green), each individual response is assumed to be certain. That is, we do not assume that a participant who has said 'green' means to say 'red' 10% of the time. The BOLD signal, on the other hand, is noisy. In response to a given stimulus, the BOLD signal will assume a range of values, normally distributed around the population mean (given some assumptions.) That is, the BOLD signal is a response that itself has uncertainty built in. In other words, physiologic noise in the BOLD fMRI response causes outcomes to be spread across categories around the veridical response value. Given unlimited amounts of data, this would not be a problem because the mean value of the BOLD response for a given stimulus would converge on the true value. But, unlike the color study, which could have 100s of trials, BOLD fMRI trials typically number in the 10s, thus responses are potentially sparse across the many outcome categories. To solve this, the outcome for each stimulus is determined by the parameters oof the neurometric function, plus a parameter we call $\sigma$ (*sigma*) that controls the width of a Gaussian that distributes outcomes across adjacent categories. Q+ estimates the value of $\sigma$ as well. 
+
+### Challenge 3: The BOLD fMRI signal is unitless. 
+  Q+ operates on outcomes with defined boundaries. The BOLD fMRI signal is unitless and thus interpreted relative to a baseline stimulus. To solve this, the outcome amplitude is calculated relative to a specified baseline stimulus, which is required to be presented at the beginning of the experiment. 
+
+### Challenge 4: The maximum response is not known *a priori*
+  Similarly, the maximum possible response is not known *a priori* a must be calculated from the neurometric curve. Again, Q+ operates on outcomes with defined boundaries, so we must impose a possible range on the BOLD signal from baseline to maximum. To solve this, the outcome algorithm adjusts the mapping of BOLD fMRI response to the outcome categories, updating an estimate of maximum BOLD response. 
+
+### Challenge 5: BOLD fMRI data are subject to low-frequency temporal noise 
+  Q+ accumulates evidence across trials. To obtain the amplitude of response on a new trial, the growing BOLD fMRI signal is subject to pre-processing, including the removal of low-frequency noise. This calculation alters the esimated response to prior trials. To solve this, we iteratively re-train Q+ with all past trials up through the current trial. 
+
+## QPFMRI: An overview
+  The QPfMRI pipeline is detailed in Figure 1. We describe the pipeline with simulated BOLD fMRI data where the model parameters can be specified in advance, but the principles for implementing Q+ with real BOLD fMRI data will be similar. To summarize, we specify a set of model parameters (Fig. 1A) then select trials and calculate the estimated BOLD fMRI response based on the model with added simulated physiologic noise. This results in a BOLD fMRI timeseries (Fig. 1B), from which we calculate the estimated response to each trial. We then pass the series of trials and outcomes to Q+ (Fig. 1C), which provides an adaptive suggestion for the next trial. Finally, at the end of the simulation, we estimate model fit (Fig. 1E). 
+    
+    
+<!-- METHODS FIGURE  -->
+\newpage
+```{r methods-figure, out.width = "500px", fig.align = "center", fig.cap = "(ref:methods-figure-caption)" }
+knitr::include_graphics("figures/Figure1.png")
+```
+(ref:methods-figure-caption) An overview of the processing pipeline in converting a BOLD signal to a Quest+ outcome. A set of model parameters is chosen (A), resulting in a predicted value for the BOLD signal, normalized between 0 and 1. Trials are then selected from this curve, which can be baseline trials (light grey dot), where the expected BOLD response is expected to be the minimum. From these trials, a BOLD fMRI timeseries is simulated using the temporal fitting engine's forward model (B), which convolves the predicted neural response from the logistic function with a canonical hemodynamic function. Gaussian noise and pink noise are then added to this signal to simulate the physiologic noise typical of fMRI. The timeseries is then fit with a general linear model, resulting in the estimated response for each trial (green bands). The baseline response (light grey vertical panels) is estimated from the average of baseline trials, and the maximum BOLD response is also estimated (dark grey vertical panels) either from maximum BOLD trials or from the estimated maximum BOLD response based on the logistic curve. Then the Q+ outcome categories are created and each non-baseline and maximum BOLD trial is assigned to the outcome category that contains its estimated value. The bin numbers and outcome categories are then passed to Q+ (C), which calculates the conditional probabilities of the parameter values (the parameter space (D)), and returns a suggestion for the next trial to present, with the aim of minimizing the entropy among the choices in the parameter space. Finally, we estimate the best fitting model to the data, resulting in an estimate of each model parameter (E). 
+\newpage
+<!-- METHODS FIGURE  -->
 
 
-# Methods
-We report how we determined our sample size, all data exclusions (if any), all manipulations, and all measures in the study. <!-- 21-word solution (Simmons, Nelson & Simonsohn, 2012; retrieved from http://ssrn.com/abstract=2160588) -->
+## Simulation method
+### Forward model 
+  TFE, autocorrelated noise, HRF. 
+  
+### Reverse model
+  GLM and fitting
+  Timeseries cleaning (baseline and max BOLD), assigning outcomes, high-pass and low-pass filtering, removing linear drift, mean-centering. 
+  
+# Results
+  Our main approach is to compare simulated BOLD fMRI data timeseries that were generated using random stimulus selection with timeseries that were generated with Q+ optimization. We first step through one sample simulation, showing trial-by-trial results. We then describe simulations over a range of parameters (model parameters and control parameters including time to repetition, TR, and trial duration), comparing random stimulus selection with Q+ stimulus selection. The results demonstrate improved convergence on model parameters when Q+ controls stimulus selection. The results also suggest optimal parameters for real-time fMRI design using Q+ for TR and trial duration. 
+  
+## Show an example simulated experiment with the convergence of the adaptive procedure upon the parameter(s) of the response function
 
-## Participants
+## Explore choices for the trial duration and TR to find optimal experimental design for rapid and accurate parameter characterization. Examples: How finely to sample the stimulus space; scan length, number of trials, stimulus duration; Forcing occasional "baseline" trials to account for 1/f drift in the BOLD fMRI signal
 
-## Material
+## Comparison of method of constant stimuli to Bayesian adaptive fMRI for time to achieve a given degree of confidence in an experimental parameter.
 
-## Procedure
+# Discussion
 
-## Data analysis
-We used `r cite_r("r-references.bib")` for all our analyses.
+## Limitations
+### This is really only useful if you already have a strong prior on the possible shape of the response function.
+### A great use case is when the distribution and/or bounds on the parameter values for a population is known, but the investigator now wishes to estimate the parameter value for a particular individual under study.
+
+## Extensions
+### Model parameters that account for variation across cortical space. Could have a model that takes as input multiple time-series and then has a parameter that describes systematic variation in responses across space (e.g., retinotopic mapping).
+### Could model not just parameters for the neural response, but physiologic parameters as well. E.g., the parameters that define the shape of the hemodynamic response, or saturating non-linearities in the conversion of neural activity to BOLD signal.
 
 
 # Results
@@ -79,7 +141,7 @@ We used `r cite_r("r-references.bib")` for all our analyses.
 
 # References
 ```{r create_r-references}
-r_refs(file = "r-references.bib")
+r_refs(file = "qpfMRI.bib")
 ```
 
 \begingroup
