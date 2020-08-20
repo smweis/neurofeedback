@@ -51,19 +51,21 @@ if isempty(p.Results.sbref)
     % Wait for the initial dicom
     initial_dir = dir([scannerPath filesep '*00001.dcm']); % count all the FIRST DICOMS in the directory
     fprintf('Waiting for first DICOM...\n');
+    firstDicom = false;
 
-    while(1)
+    while(~firstDicom)
         % Check files in scannerPath
         new_dir = dir([scannerPath filesep '*00001.dcm']);
         % If there's a new FIRST DICOM
         if length(new_dir) > length(initial_dir)
           fprintf('Performing registration on first DICOM\n');
+          firstDicom = true;
 
           %% Complete Registration to First DICOM
             % Save this to initialize the check_for_new_dicoms function
             reg_dicom_name = new_dir(end).name;
             reg_dicom_path = new_dir(end).folder;
-            dirLengthAfterRegistration = length(dir(scannerPath));
+            dirLengthAfterRegistration = length(dir(strcat(scannerPath,filesep,'*.dcm')));
             reg_dicom = fullfile(reg_dicom_path,reg_dicom_name);
             break
         else
@@ -96,7 +98,7 @@ end
 
 % convert the first DICOM to a NIFTI
 if isempty(p.Results.sbref)
-    command = strcat('dicm2niix -z y -o ',reg_image_dir, ' ',reg_dicom);
+    command = horzcat('dcm2niix -z y -s y -o ',reg_image_dir, ' ',reg_dicom);
     [status,cmdout] = system(command);
     if status ~= 0
         error('Could not convert dicom to nifti. Perhaps dicm2niix is not installed?\n %s',cmdout);
@@ -107,8 +109,9 @@ if isempty(p.Results.sbref)
     old_dicom_folder = old_dicom_dir.folder;
 else
     if strcmp(p.Results.sbref,'*dcm*')
-        command = strcat('dicm2niix -z y -o ',reg_image_dir,' ',p.Results.sbref);
+        command = horzcat('dcm2niix -z y -s y -o ',reg_image_dir,' ',p.Results.sbref);
         [status,cmdout] = system(command);
+        fprintf(cmdout);
         if status ~= 0
             error('Could not convert dicom to nifti. Perhaps dicm2niix is not installed?\n %s',cmdout);
         end
@@ -136,12 +139,16 @@ copyfile(fullfile(old_dicom_folder,old_dicom_name),strcat(reg_image_dir,filesep,
 
 % grab path to the bash script for registering to the new DICOM
 pathToRegistrationScript = fullfile(codePath,'realTime','main','registerEpiToEpi.sh');
-
 % run registration script name as: register_EPI_to_EPI.sh AP TOME_3040
-cmdStr = [pathToRegistrationScript ' ' apOrPa ' ' subject ' run', run];
-system(cmdStr);
-
-fprintf('Registration Complete. \n');
+subjectProcessedPath = [subjectPath filesep 'processed'];
+command = [pathToRegistrationScript ' ' apOrPa ' ' subjectProcessedPath ' run', run];
+[status,cmdout] = system(command);
+        fprintf(cmdout);
+if status ~= 0
+    error('Could not complete registration. Perhaps fsl is not installed?\n %s',cmdout);
+else
+    fprintf('Registration Complete. \n');
+end
 
 
 end
