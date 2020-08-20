@@ -30,32 +30,6 @@
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
-		"name": "flywheelMRSupport",
-		"pathPlacement": "append",
-		"subfolder": "",
-		"toolboxRoot": "",
-		"type": "include",
-		"update": "",
-		"url": ""
-	},
-	{
-		"flavor": "",
-		"hook": "",
-		"importance": "",
-		"localHookTemplate": "",
-		"name": "Psychtoolbox-3",
-		"pathPlacement": "append",
-		"subfolder": "Psychtoolbox",
-		"toolboxRoot": "",
-		"type": "git",
-		"update": "",
-		"url": "https://github.com/Psychtoolbox-3/Psychtoolbox-3.git"
-	},
-	{
-		"flavor": "",
-		"hook": "",
-		"importance": "",
-		"localHookTemplate": "",
 		"name": "bads",
 		"pathPlacement": "append",
 		"subfolder": "",
@@ -63,6 +37,33 @@
 		"type": "git",
 		"update": "",
 		"url": "https:\/\/github.com\/lacerbi\/bads.git"
+	},
+
+{
+		"flavor": "",
+		"hook": "",
+		"importance": "optional",
+		"localHookTemplate": "",
+		"name": "parallel",
+		"pathPlacement": "append",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "installed",
+		"update": "",
+		"url": ""
+	},
+{
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "temporalFittingEngine",
+		"pathPlacement": "append",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "include",
+		"update": "",
+		"url": ""
 	},
  	{
 		"flavor": "",
@@ -93,19 +94,6 @@
 {
 		"flavor": "",
 		"hook": "",
-		"importance": "",
-		"localHookTemplate": "config/neurofeedbackLocalHookTemplate.m",
-		"name": "neurofeedback",
-		"pathPlacement": "append",
-		"subfolder": "",
-		"toolboxRoot": "#",
-		"type": "git",
-		"update": "",
-		"url": "https:\/\/www.github.com\/smweis\/neurofeedback"
-	},
-{
-		"flavor": "",
-		"hook": "",
 		"importance": "optional",
 		"localHookTemplate": "",
 		"name": "parallel",
@@ -115,5 +103,57 @@
 		"type": "installed",
 		"update": "",
 		"url": ""
+	},
+{
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "qpfmri",
+		"pathPlacement": "append",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": "https:\/\/github.com\/smweis\/qpfmri.git"
+	},
+{
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "rtfmri",
+		"pathPlacement": "append",
+		"subfolder": "",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": "https:\/\/github.com\/smweis\/rtfmri.git"
+	},
+	{
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "",
+		"name": "Psychtoolbox-3",
+		"pathPlacement": "append",
+		"subfolder": "Psychtoolbox",
+		"toolboxRoot": "",
+		"type": "git",
+		"update": "",
+		"url": "https://github.com/Psychtoolbox-3/Psychtoolbox-3.git"
+	},
+{
+		"flavor": "",
+		"hook": "",
+		"importance": "",
+		"localHookTemplate": "config/neurofeedbackLocalHookTemplate.m",
+		"name": "neurofeedback",
+		"pathPlacement": "append",
+		"subfolder": "",
+		"toolboxRoot": "#",
+		"type": "git",
+		"update": "",
+		"url": "https:\/\/www.github.com\/smweis\/neurofeedback"
 	}
 ]
