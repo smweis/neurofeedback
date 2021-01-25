@@ -289,22 +289,8 @@ try
         % The flicker case:
         if stimFreq ~= 0
             if (elapsedTime - curFrame) > (1/(stimFreq*2))
-              %  contrast = 0 + (1 - 0) * rand(100,0);
                 frameCt = frameCt + 1;
-                contrast = 0.5;
-                white = contrast;
-                black = 1-contrast;
-                xylim = 2 * pi * rcycles;
-                [x, y] = meshgrid(-xylim: 2 * xylim / (screenYpix - 1): xylim,...
-                    -xylim: 2 * xylim / (screenYpix - 1): xylim);
-                at = atan2(y, x);
-                checks = ((1 + sign(sin(at * tcycles) + eps)...
-                    .* sign(sin(sqrt(x.^2 + y.^2)))) / 2) * (white - black) + black;
-                circle = x.^2 + y.^2 <= xylim^2;
-                checks = circle .* checks + grey * ~circle;
-                texture1 = checks;
-                Texture(1) = Screen('MakeTexture', winPtr, texture1);
-
+                
                 % Screen( 'DrawTexture', winPtr, Texture( mod(frameCt,2) + 1 )); % current frame
                 Screen( 'DrawTexture', winPtr, Texture(1) );
                 Screen('Flip', winPtr);
