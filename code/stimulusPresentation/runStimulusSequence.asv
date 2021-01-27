@@ -1,4 +1,4 @@
-function runStimulusSequence(subject,run,varargin)
+function runStimulusSequence(subject,run,type,varargin)
 
 % Run the stimulus sequence at the scanner.
 %
@@ -11,6 +11,8 @@ function runStimulusSequence(subject,run,varargin)
 % Inputs:
 %   subject                 - String. The name/ID of the subject.
 %   run                     - String. The run or acquisition number.
+%   type                    - String. The type of stimulus
+%                                     options: screen, board, radial
 
 
 % Optional key/value pairs:
@@ -43,10 +45,11 @@ function runStimulusSequence(subject,run,varargin)
 1. Sanity Check
 subject = 'Ozzy_Test';
 run = '0';
+type = 'radial';
 checkerboardSize = 0;
 allFreqs = 15;
 baselineTrialFrequency = 2;
-runStimulusSequence(subject,run,'checkerboardSize',checkerboardSize,'allFreqs',allFreqs,'baselineTrialFrequency',baselineTrialFrequency);
+runStimulusSequence(subject,run,type,'checkerboardSize',checkerboardSize,'allFreqs',allFreqs,'baselineTrialFrequency',baselineTrialFrequency);
 
 1. Q+ Setup
 subject = 'Ozzy_Test';
@@ -61,6 +64,7 @@ p = inputParser;
 % Required input
 p.addRequired('subject',@isstr);
 p.addRequired('run',@isstr);
+p.addRequired('type',@isstr);
 
 % Optional params
 p.addParameter('checkerboardSize',60,@isnumeric); % 60 = checker; 0 = screen flash
@@ -75,7 +79,7 @@ p.addParameter('tChar','t',@isstr);
 
 % Parse
 % p.parse( subject, run, atScanner, model, varargin{:});
-p.parse( subject, run, varargin{:});
+p.parse( subject, run, type, varargin{:});
 
 display = struct;
 display.distance = p.Results.displayDistance;
@@ -177,15 +181,13 @@ tcycles = 24;
 %% Make images
 greyScreen = grey*ones(fliplr(display.resolution));
 
-if p.Results.checkerboardSize == 0
+if strcmp(type,'screen')
     texture1 = black*ones(fliplr(display.resolution));
     texture2 = white*ones(fliplr(display.resolution));
-else
-    % Square
-%     texture1 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)>.5);
-%     texture2 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)<.5);
-    
-    % Radial
+elseif strcmp(type,'board')
+     texture1 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)>.5);
+    texture2 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)<.5);
+elseif strcmp(type,'radial')
     xylim = 2 * pi * rcycles;
     [x, y] = meshgrid(-xylim: 2 * xylim / (screenYpix - 1): xylim,...
         -xylim: 2 * xylim / (screenYpix - 1): xylim);
@@ -196,13 +198,13 @@ else
     checks = circle .* checks + grey * ~circle;
     texture1 = checks;
     texture2 = checks-1;
-    
+else
+    error('type not supported. Supported types include screen, board, and radial.');
 end
 
 Texture(1) = Screen('MakeTexture', winPtr, texture1);
 Texture(2) = Screen('MakeTexture', winPtr, texture2);
 Texture(3) = Screen('MakeTexture', winPtr, greyScreen);
-
 %% Display Text, wait for Trigger
 
 commandwindow;
@@ -288,12 +290,31 @@ try
         % screen. If it's not zero, we'll flicker.
         % The flicker case:
         if stimFreq ~= 0
+            % Radial checkerboards must be redrawn with new contrast
+            if strcmp(type,'radial')
+                contrast = 0.75;
+                disp(stimFreq);
+                white = contrast;
+                black = 1-contrast;
+                xylim = 2 * pi * rcycles;
+                [x, y] = meshgrid(-xylim: 2 * xylim / (screenYpix - 1): xylim,...
+                    -xylim: 2 * xylim / (screenYpix - 1): xylim);
+                at = atan2(y, x);
+                checks = ((1 + sign(sin(at * tcycles) + eps)...
+                    .* sign(sin(sqrt(x.^2 + y.^2)))) / 2) * (white - black) + black;
+                circle = x.^2 + y.^2 <= xylim^2;
+                checks = circle .* checks + grey * ~circle;
+                texture1 = checks;
+                Texture(1) = Screen('MakeTexture', winPtr, texture1);
+            end
+            
             if (elapsedTime - curFrame) > (1/(stimFreq*2))
+              %  contrast = 0 + (1 - 0) * rand(100,0);
                 frameCt = frameCt + 1;
-                
+
                 % Screen( 'DrawTexture', winPtr, Texture( mod(frameCt,2) + 1 )); % current frame
                 Screen( 'DrawTexture', winPtr, Texture(1) );
-                Screen('Flip', winPtr);
+                Screen('Flip',winPtr);
                 curFrame = GetSecs - startTime;
             end
         % The gray screen case.
