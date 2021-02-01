@@ -212,7 +212,7 @@ Screen('FillRect',winPtr, grey);
 Screen('DrawDots', winPtr, [0;0], fix_dot,black, center, 1);
 Screen('Flip',winPtr);
 ListenChar(2);
-HideCursor;
+%HideCursor;
 disp('Ready, waiting for trigger...');
 
 startTime = wait4T(p.Results.tChar);  %wait for 't' from scanner.
@@ -231,7 +231,7 @@ blockNum = 0;
 % randomly select a stimulus frequency to start with
 whichFreq = randi(length(p.Results.allFreqs));
 stimFreq = p.Results.allFreqs(whichFreq);
-
+stimFileSize = 0;
 try
     while elapsedTime < p.Results.scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
         thisBlock = ceil(elapsedTime/p.Results.blockDur);
@@ -249,16 +249,23 @@ try
 
             % If it's not the 6th block, then see if Quest+ has a
             % recommendation for which stimulus frequency to present next.
-            elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*')))
+            elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*'))) && dir(fullfile(subjectPath,'stimLog','nextStim*')).bytes ~= stimFileSize
 
-                d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
-                [~,idx] = max([d.datenum]);
-                filename = d(idx).name;
-                nextStimNum = sscanf(filename,'nextStimuli%d');
-                trialTypeString = ['quest recommendation - ' num2str(nextStimNum)];
-                readFid = fopen(fullfile(subjectPath,'stimLog',filename),'r');
-                stimFreq = fscanf(readFid,'%d');
+%                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
+                filename = dir(fullfile(subjectPath,'stimLog','nextStim*'));
+%                 [~,idx] = max([d.datenum]);
+%                 filename = d(idx).name;
+%                 nextStimNum = sscanf(filename,'%d');
+                %trialTypeString = ['quest recommendation - ' num2str(nextStimNum)];
+                trialTypeString = 'QUEST+';
+                readFid = fopen(fullfile(subjectPath,'stimLog',filename.name),'r');
+                while ~feof(readFid)
+                    line = fgetl(readFid);
+                end
+                % stimFreq = fscanf(readFid,'%d');
+                stimFreq = str2double(line);
                 fclose(readFid);
+                stimFileSize = filename.bytes;
 
             % If there's no Quest+ recommendation yet, randomly pick a
             % frequency from p.Results.allFreqs.
@@ -292,7 +299,7 @@ try
         if stimFreq ~= 0
             % Radial checkerboards must be redrawn with new contrast
             if strcmp(type,'radial')
-                contrast = 0.75;
+                contrast = 1;
                 white = contrast;
                 black = 1-contrast;
                 xylim = 2 * pi * rcycles;
