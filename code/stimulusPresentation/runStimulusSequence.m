@@ -184,9 +184,11 @@ greyScreen = grey*ones(fliplr(display.resolution));
 if strcmp(type,'screen')
     texture1 = black*ones(fliplr(display.resolution));
     texture2 = white*ones(fliplr(display.resolution));
+    freqs = p.Results.allFreqs;
 elseif strcmp(type,'board')
-     texture1 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)>.5);
+    texture1 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)>.5);
     texture2 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)<.5);
+    freqs = p.Results.allFreqs;
 elseif strcmp(type,'radial')
     xylim = 2 * pi * rcycles;
     [x, y] = meshgrid(-xylim: 2 * xylim / (screenYpix - 1): xylim,...
@@ -198,6 +200,8 @@ elseif strcmp(type,'radial')
     checks = circle .* checks + grey * ~circle;
     texture1 = checks;
     texture2 = checks-1;
+    
+    freqs = linspace(0.5,1,8); % creates 8 stimuli evenly spaced
 else
     error('type not supported. Supported types include screen, board, and radial.');
 end
@@ -229,8 +233,8 @@ disp(['Trigger received - ' params.startDateTime]);
 blockNum = 0;
 
 % randomly select a stimulus frequency to start with
-whichFreq = randi(length(p.Results.allFreqs));
-stimFreq = p.Results.allFreqs(whichFreq);
+whichFreq = randi(length(freqs));
+stimFreq = freqs(whichFreq);
 stimFileSize = 0;
 try
     while elapsedTime < p.Results.scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
@@ -271,8 +275,8 @@ try
             % frequency from p.Results.allFreqs.
             else
                 trialTypeString = 'random';
-                whichFreq = randi(length(p.Results.allFreqs));
-                stimFreq = p.Results.allFreqs(whichFreq);
+                whichFreq = randi(length(freqs));
+                stimFreq = freqs(whichFreq);
             end
 
             % Write the stimulus that was presented to a text file so that
@@ -285,7 +289,11 @@ try
             % Print the last trial info to the terminal and save it to
             % params.
             disp(['Trial Type - ' trialTypeString]);
-            disp(['Trial Number - ' num2str(blockNum) '; Frequency - ' num2str(stimFreq)]);
+            if strcmp(type,'radial')
+                disp(['Trial Number - ' num2str(blockNum) '; Contrast - ' num2str(stimFreq)]);
+            else
+                disp(['Trial Number - ' num2str(blockNum) '; Frequency - ' num2str(stimFreq)]);
+            end
 
             params.stimFreq(thisBlock) = stimFreq;
             params.trialTypeStrings{thisBlock} = trialTypeString;
@@ -299,7 +307,7 @@ try
         if stimFreq ~= 0
             % Radial checkerboards must be redrawn with new contrast
             if strcmp(type,'radial')
-                contrast = 1;
+                contrast = stimFreq;
                 white = contrast;
                 black = 1-contrast;
                 xylim = 2 * pi * rcycles;
