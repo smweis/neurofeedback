@@ -240,7 +240,6 @@ stimFileSize = 0;
 try
     while elapsedTime < p.Results.scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
         thisBlock = ceil(elapsedTime/p.Results.blockDur);
-        disp(p.results.blockDur);
 
 
         % If the block time has elapsed, then time to pick a new stimulus
