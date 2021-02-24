@@ -156,6 +156,7 @@ black = BlackIndex(screenid);
 white = WhiteIndex(screenid);
 grey = white/2;
 
+baseline = 0.5;
 
 %% Screen params
 res = Screen('Resolution',max(Screen('screens')));
@@ -240,8 +241,6 @@ stimFileSize = 0;
 try
     while elapsedTime < p.Results.scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
         thisBlock = ceil(elapsedTime/p.Results.blockDur);
-        disp(p.results.blockDur);
-
 
         % If the block time has elapsed, then time to pick a new stimulus
         % frequency.
@@ -258,7 +257,7 @@ try
 %             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*'))) && dir(fullfile(subjectPath,'stimLog','nextStim*')).bytes ~= stimFileSize
 
 %                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
-                filename = dir(fullfile(subjectPath,'stims','suggestions'));
+                filename = dir(fullfile(subjectPath,'stims','suggestions.txt'));
 %                 [~,idx] = max([d.datenum]);
 %                 filename = d(idx).name;
 %                 nextStimNum = sscanf(filename,'%d');
@@ -267,6 +266,7 @@ try
                 readFid = fopen(fullfile(subjectPath,'stims',filename.name),'r');
                 while ~feof(readFid)
                     line = fgetl(readFid);
+                    disp(line);
                 end
                 % stimFreq = fscanf(readFid,'%d');
                 stimFreq = str2double(line);
@@ -306,7 +306,7 @@ try
         % We will handle stimFreq = 0 different to just present a gray
         % screen. If it's not zero, we'll flicker.
         % The flicker case:
-        if stimFreq ~= 0.01
+        if stimFreq ~= baseline
             % Radial checkerboards must be redrawn with new contrast
             if strcmp(type,'radial')
                 contrast = stimFreq;
@@ -347,12 +347,13 @@ try
         % check to see if the "esc" button was pressed
         breakIt = escPressed(keybs);
         WaitSecs(0.001);
-
+        
+        %pause(p.Results.blockDur);
     end
 
     % Close screen and save data.
     sca;
-    save(fullfile(subjectPath,strcat('stimFreqData_Run',run,'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
+    save(fullfile(subjectPath,'stims',strcat('stimFreqData_Run',run,'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     disp(['elapsedTime = ' num2str(elapsedTime)]);
     ListenChar(1);
     ShowCursor;
@@ -360,7 +361,7 @@ try
 
 catch ME
     Screen('CloseAll');
-    save(fullfile(subjectPath,strcat('stimFreqData_Run',run),datestr(now,'mm_dd_yyyy_HH_MM')),'params');
+    save(fullfile(subjectPath,'stims',strcat('stimFreqData_Run',run,datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     ListenChar;
     ShowCursor;
     rethrow(ME);
