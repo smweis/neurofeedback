@@ -41,48 +41,46 @@ end
 userID = strtrim(userID);
 
 if IsWindows
-    fprintf('No FSL available on Windows.');
     userID = strsplit(userID,'\');
     userID = userID{2};
-    baseDir = '\\exasmb.rc.ufl.edu';
+    baseDir = strcat('C:/Users/',userID,'/Documents/');
 else
-    baseDir = '';
-    
+    baseDir = strcat('/blue/stevenweisberg/';
     % Load packages for data analysis on Hipergator. 
-    system('module load mricrogl');
-    system('module load fsl');
-
+    system('ml mricrogl');
+    system('ml fsl');
 end
 
-try
-    % scannerBasePath is the main directory where the scanner will drop files.
-    scannerBasePath = fullfile(baseDir,'blue',...,
-        'stevenweisberg','share','rtfmri_incoming');
-    cd(scannerBasePath);
-    addpath(scannerBasePath);
-    fprintf('Success, server mounted at: %s',scannerBasePath);
-    
-catch
-    fprintf('No server found at: %s',scannerBasePath);
-    fprintf('Try mounting the Hipergator and trying again.');
-end
+paths = struct;
+
+% scannerBasePath is the main directory where the scanner will drop files.
+paths.scannerBase = fullfile(baseDir,'blue',...,
+    'stevenweisberg','share','rtfmri_incoming');
 
 % projectBasePath is where the Matlab directories are.
-projectBasePath = fullfile(baseDir,'blue',...,
-        'stevenweisberg',userID,'MATLAB','projects',projectName);
-addpath('projectBasePath');    
+paths.projectBase = fullfile(baseDir,'MATLAB','projects',projectName);
 
 % currentSubjectBasePath will load in the new currentSubjectData
-currentSubjectBasePath = fullfile(baseDir,'blue','stevenweisberg','rtQuest','rtQuest');
-addpath(currentSubjectBasePath);
+paths.currentSubjectBase = fullfile(baseDir,'blue','stevenweisberg','rtQuest','rtQuest');
 
-analysisScratchDir = fullfile(scannerBasePath,'scratch');
-mkdir(analysisScratchDir);
-addpath(analysisScratchDir);
+% scratch is just for temporary storage.
+paths.scratch = fullfile(paths.scannerBase,'scratch');
 
-setpref(projectName,'analysisScratchDir',analysisScratchDir);
-setpref(projectName,'projectRootDir',projectBasePath);
-setpref(projectName,'currentSubjectBasePath', currentSubjectBasePath);
-setpref(projectName,'scannerBasePath',scannerBasePath);
+% Add all path names to the path
+pathNames = fieldNames(paths);
+for i = 1:length(pathNames)
+    path = paths.(pathNames{i});
+    if ~isfolder(path)
+        mkdir(path);    
+    end
+    addpath(path);
+end
+
+cd(paths.scannerBase);
+
+setpref(projectName,'analysisScratchDir',paths.scratch);
+setpref(projectName,'projectRootDir',paths.projectBase);
+setpref(projectName,'currentSubjectBasePath',paths.currentSubjectBase);
+setpref(projectName,'scannerBasePath',paths.scannerBase);
 
 end
