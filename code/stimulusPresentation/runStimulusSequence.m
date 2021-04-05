@@ -70,7 +70,7 @@ p.addRequired('type',@isstr);
 p.addParameter('checkerboardSize',60,@isnumeric); % 60 = checker; 0 = screen flash
 p.addParameter('allFreqs',[1.875,3.75,7.5,15,30],@isvector);
 p.addParameter('blockDur',12,@isnumeric);
-p.addParameter('scanDur',360,@isnumeric);
+p.addParameter('scanDur',240,@isnumeric);
 p.addParameter('displayDistance',106.5,@isnumeric);
 p.addParameter('displayWidth',69.7347,@isnumeric);
 p.addParameter('displayHeight',39.2257,@isnumeric);
@@ -128,8 +128,8 @@ params.checkerboardOrFullscreen = p.Results.checkerboardSize;
 %% Set up actualStimuli.txt
 % A text file that will serve as a record for all stimuli frequencies
 % presented during this run number.
-actualStimuliTextFile = strcat('actualStimuli',run,'.txt');
-fid = fopen(fullfile(subjectPath,actualStimuliTextFile),'w');
+actualStimuliTextFile = fullfile(subjectPath,'stims',strcat('actualStimuli',run,'.txt'));
+fid = fopen(actualStimuliTextFile,'w');
 fclose(fid);
 
 %% Initial settings
@@ -241,7 +241,7 @@ stimFileSize = 0;
 try
     while elapsedTime < p.Results.scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
         thisBlock = ceil(elapsedTime/p.Results.blockDur);
-
+        
         % If the block time has elapsed, then time to pick a new stimulus
         % frequency.
         if thisBlock > blockNum
@@ -257,13 +257,14 @@ try
 %             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*'))) && dir(fullfile(subjectPath,'stimLog','nextStim*')).bytes ~= stimFileSize
 
 %                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
-                filename = dir(fullfile(subjectPath,'stims','suggestions.txt'));
+                stimFile = fullfile(subjectPath,'stims','suggestions.txt');
 %                 [~,idx] = max([d.datenum]);
 %                 filename = d(idx).name;
 %                 nextStimNum = sscanf(filename,'%d');
                 %trialTypeString = ['quest recommendation - ' num2str(nextStimNum)];
                 trialTypeString = 'QUEST+';
-                readFid = fopen(fullfile(subjectPath,'stims',filename.name),'r');
+                
+                readFid = fopen(stimFile,'r');
                 while ~feof(readFid)
                     line = fgetl(readFid);
                     disp(line);
@@ -271,7 +272,7 @@ try
                 % stimFreq = fscanf(readFid,'%d');
                 stimFreq = str2double(line);
                 fclose(readFid);
-                stimFileSize = filename.bytes;
+                % stimFileSize = filename.bytes;
 
             % If there's no Quest+ recommendation yet, randomly pick a
             % frequency from p.Results.allFreqs.
@@ -284,7 +285,7 @@ try
             % Write the stimulus that was presented to a text file so that
             % Quest+ can see what's actually been presented.
 
-            fid = fopen(fullfile(subjectPath,actualStimuliTextFile),'a');
+            fid = fopen(actualStimuliTextFile,'a');
             fprintf(fid,'%d\n',stimFreq);
             fclose(fid);
 
@@ -353,7 +354,7 @@ try
 
     % Close screen and save data.
     sca;
-    save(fullfile(subjectPath,'stims',strcat('stimFreqData_Run',run,'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
+   % save(fullfile(subjectPath,'stims',strcat('stimFreqData_Run',run,'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     disp(['elapsedTime = ' num2str(elapsedTime)]);
     ListenChar(1);
     ShowCursor;
@@ -361,7 +362,7 @@ try
 
 catch ME
     Screen('CloseAll');
-    save(fullfile(subjectPath,'stims',strcat('stimFreqData_Run',run,datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
+   % save(fullfile(subjectPath,'stims',strcat('stimFreqData_Run',run,datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     ListenChar;
     ShowCursor;
     rethrow(ME);

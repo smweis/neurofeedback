@@ -45,7 +45,7 @@ if IsWindows
     userID = userID{2};
     baseDir = strcat('C:/Users/',userID,'/Documents/');
 else
-    baseDir = strcat('/blue/stevenweisberg/';
+    baseDir = strcat('/blue/stevenweisberg/');
     % Load packages for data analysis on Hipergator. 
     system('ml mricrogl');
     system('ml fsl');
@@ -55,13 +55,13 @@ paths = struct;
 
 % scannerBasePath is the main directory where the scanner will drop files.
 paths.scannerBase = fullfile(baseDir,'blue',...,
-    'stevenweisberg','share','rtfmri_incoming');
+    'share','rtfmri_incoming');
 
 % projectBasePath is where the Matlab directories are.
 paths.projectBase = fullfile(baseDir,'MATLAB','projects',projectName);
 
 % currentSubjectBasePath will load in the new currentSubjectData
-paths.currentSubjectBase = fullfile(baseDir,'blue','stevenweisberg','rtQuest','rtQuest');
+paths.currentSubjectBase = fullfile(baseDir,'blue','rtQuest');
 
 % scratch is just for temporary storage.
 paths.scratch = fullfile(paths.scannerBase,'scratch');
