@@ -106,7 +106,7 @@ display.height = p.Results.displayHeight;
 %% Debugging?
 % This will make the window extra small so you can test while still looking
 % at the code.
-debug = 0;
+debug = 1;
 
 if debug
     stimWindow = [10 10 200 200];
@@ -374,11 +374,13 @@ try
             Screen('Flip', winPtr,0,1);
         end
         
-        if latency ~= 0 && GetSecs-trialStart >= latency/1000
+        if latency ~= 0 && GetSecs*1000-trialStart >= latency
             fix_color = red;
         else
             fix_color = green;
         end
+        disp(GetSecs*1000-trialStart);
+        disp(latency);
         Screen('DrawLines', winPtr, allCoords,...
                     width_pix, fix_color, [center(1) center(2)]);
         Screen('Flip',winPtr,0,1);
