@@ -1,4 +1,4 @@
-function runStimulusSequence(subject,run,type,varargin)
+function params = runStimulusSequence(subject,run,type,varargin)
 
 % Run the stimulus sequence at the scanner.
 %
@@ -106,7 +106,7 @@ display.height = p.Results.displayHeight;
 %% Debugging?
 % This will make the window extra small so you can test while still looking
 % at the code.
-debug = 0;
+debug = 1;
 
 if debug
     stimWindow = [10 10 200 200];
@@ -149,13 +149,14 @@ else % windows
 end
 
 
-%% Define black and white
+%% Define colors
 black = BlackIndex(screenid);
 white = WhiteIndex(screenid);
 grey = white/2;
 red = [1 0 0];
 green = [0 1 0];
 
+% generate red cross trial numbers
 baseline = 0.5;
 num_trials = p.Results.scanDur / (p.Results.blockDur + 0.5);
 flip_trials = [];
@@ -176,6 +177,7 @@ display.screenAngle = pix2angle( display, display.resolution );
 [center(1), center(2)]          = RectCenter(windowRect); % Get the center coordinate of the window
 fix_dot                         = angle2pix(display,0.25); % For fixation cross (0.25 degree)
 
+% create fixation cross
 fix_cross_pix = 10;
 xCoords = [-fix_cross_pix fix_cross_pix 0 0];
 yCoords = [0 0 -fix_cross_pix fix_cross_pix];
@@ -204,6 +206,7 @@ elseif strcmp(type,'board')
     texture2 = double(checkerboard(p.Results.checkerboardSize/2,res.height/p.Results.checkerboardSize,res.width/p.Results.checkerboardSize)<.5);
     freqs = p.Results.allFreqs;
 elseif strcmp(type,'radial')
+    % create radial checkerboard
     xylim = 2 * pi * rcycles;
     [x, y] = meshgrid(-xylim: 2 * xylim / (screenYpix - 1): xylim,...
         -xylim: 2 * xylim / (screenYpix - 1): xylim);
@@ -221,12 +224,12 @@ else
     error('type not supported. Supported types include screen, board, and radial.');
 end
 
+% create mask
 r = screenXpix/25;
 theta = 0:2*pi/360:2*pi;
 x = r * cos(theta) + screenYpix/2;
 y= r * sin(theta) + screenYpix/2;
 mask = poly2mask(x,y,screenYpix,screenYpix);
-size(mask)
 texture1 = texture1 .* imcomplement(mask) + (mask .* 0.5);
 
 Texture(1) = Screen('MakeTexture', winPtr, texture1);
@@ -248,6 +251,7 @@ disp('Ready, waiting for trigger...');
 startTime = wait4T(p.Results.tChar);  %wait for 't' from scanner.
 
 %% Drawing Loop
+% initialize variables
 breakIt = 0;
 frameCt = 0;
 
@@ -259,11 +263,10 @@ disp(['Trigger received - ' params.startDateTime]);
 blockNum = 0;
 timings = [1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000];
 latency = 0;
-params.onset = nan(4,(p.Results.scanDur/p.Results.blockDur));
+params.onset = nan(5,(p.Results.scanDur/p.Results.blockDur));
 % randomly select a stimulus frequency to start with
 whichFreq = randi(length(freqs));
 stimFreq = freqs(whichFreq);
-stimFileSize = 0;
 trialStart = 0;
 try
     while elapsedTime < p.Results.scanDur && ~breakIt  %loop until 'esc' pressed or time runs out
@@ -275,6 +278,7 @@ try
             blockNum = thisBlock;
             trialStart = GetSecs;
 
+            % assign random intra-trial onset of red cross (conditional)
             if ismember(blockNum,flip_trials)
                 latency = timings(randi(length(timings)));
             else
@@ -289,45 +293,24 @@ try
             Screen('DrawLines', winPtr, allCoords,...
                     width_pix, fix_color, [center(1) center(2)]);
             Screen('Flip',winPtr,0,1);
+            
+            % record onset times 
             params.onset(1,thisBlock) = GetSecs; % ISI
             params.onset(2,thisBlock) = GetSecs; % green cross
             params.onset(4,thisBlock) = latency/1000; % red cross
             pause(0.5);
 
-            % Every sixth block, set stimFreq = 0. Will display gray screen
-%             if mod(blockNum,p.Results.baselineTrialFrequency) == 1
-%                 trialTypeString = 'baseline';
-%                 stimFreq = 0;
+            % load in stimulus suggestions
+            stimFile = fullfile(subjectPath,'stims',strcat('run',num2str(run)),'suggestions.txt');
+            trialTypeString = 'QUEST+';
 
-            % If it's not the 6th block, then see if Quest+ has a
-            % recommendation for which stimulus frequency to present next.
-%             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*'))) && dir(fullfile(subjectPath,'stimLog','nextStim*')).bytes ~= stimFileSize
-
-%                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
-                stimFile = fullfile(subjectPath,'stims',strcat('run',num2str(run)),'suggestions.txt');
-%                 [~,idx] = max([d.datenum]);
-%                 filename = d(idx).name;
-%                 nextStimNum = sscanf(filename,'%d');
-                %trialTypeString = ['quest recommendation - ' num2str(nextStimNum)];
-                trialTypeString = 'QUEST+';
-                
-                readFid = fopen(stimFile,'r');
-                while ~feof(readFid)
-                    line = fgetl(readFid);
-                    disp(line);
-                end
-                % stimFreq = fscanf(readFid,'%d');
-                stimFreq = str2double(line);
-                fclose(readFid);
-                % stimFileSize = filename.bytes;
-
-            % If there's no Quest+ recommendation yet, randomly pick a
-            % frequency from p.Results.allFreqs.
-%             else
-%                 trialTypeString = 'random';
-%                 whichFreq = randi(length(freqs));
-%                 stimFreq = freqs(whichFreq);
-%             end
+            readFid = fopen(stimFile,'r');
+            while ~feof(readFid)
+                line = fgetl(readFid);
+                disp(line);
+            end
+            stimFreq = str2double(line);
+            fclose(readFid);
 
             % Write the stimulus that was presented to a text file so that
             % Quest+ can see what's actually been presented.
@@ -375,9 +358,7 @@ try
             end
             
             if (elapsedTime - curFrame) > (1/(stimFreq*2))
-              %  contrast = 0 + (1 - 0) * rand(100,0);
                 frameCt = frameCt + 1;
-
                 % Screen( 'DrawTexture', winPtr, Texture( mod(frameCt,2) + 1 )); % current frame
                 Screen( 'DrawTexture', winPtr, Texture(1) );
                 Screen('Flip',winPtr,0,1);
@@ -404,6 +385,10 @@ try
         params.endDateTime = datestr(now);
         % check to see if the "esc" button was pressed
         breakIt = escPressed(keybs);
+        % check and record subject response
+        if bPressed(keybs)
+            params.onset(5,thisBlock) = GetSecs; % response recieved
+        end
         WaitSecs(0.001);
         
         %pause(p.Results.blockDur);
