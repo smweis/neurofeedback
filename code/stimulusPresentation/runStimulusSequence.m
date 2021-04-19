@@ -43,8 +43,8 @@ function runStimulusSequence(subject,run,type,varargin)
 %{
 
 1. Sanity Check
-subject = 'Ozzy_Test';
-run = '0';
+subject = 'sub-102';
+run = '1';
 type = 'radial';
 checkerboardSize = 0;
 allFreqs = 15;
@@ -115,7 +115,7 @@ else
 end
 
 
-
+run = p.Results.run;
 
 %% Save input variables
 params.stimFreq                 = nan(1,p.Results.scanDur/p.Results.blockDur);
@@ -126,7 +126,7 @@ params.checkerboardOrFullscreen = p.Results.checkerboardSize;
 %% Set up actualStimuli.txt
 % A text file that will serve as a record for all stimuli frequencies
 % presented during this run number.
-actualStimuliTextFile = fullfile(subjectPath,'stims',strcat('actualStimuli',run,'.txt'));
+actualStimuliTextFile = fullfile(subjectPath,'stims',strcat('run',num2str(run)),strcat('actualStimuli',run,'.txt'));
 fid = fopen(actualStimuliTextFile,'w');
 fclose(fid);
 
@@ -176,16 +176,16 @@ display.screenAngle = pix2angle( display, display.resolution );
 [center(1), center(2)]          = RectCenter(windowRect); % Get the center coordinate of the window
 fix_dot                         = angle2pix(display,0.25); % For fixation cross (0.25 degree)
 
-fix_cross_pix = 40;
+fix_cross_pix = 10;
 xCoords = [-fix_cross_pix fix_cross_pix 0 0];
 yCoords = [0 0 -fix_cross_pix fix_cross_pix];
 allCoords = [xCoords; yCoords];
-width_pix = 4;
+width_pix = 2;
 fix_color = green;
 
 % Screen resolution in Y
 screenYpix = windowRect(4);
-
+screenXpix = windowRect(3);
 % Number of white/black circle pairs
 rcycles = 8;
 
@@ -214,13 +214,20 @@ elseif strcmp(type,'radial')
     checks = circle .* checks + grey * ~circle;
     texture1 = checks;
     texture2 = checks-1;
-    disp(checks);
     
     %freqs = linspace(0.5,1,8); % creates 8 stimuli evenly spaced
     freqs = logspace(-0.301,0,8); % creates 8 log-spaced stimuli between 0.5 and 1
 else
     error('type not supported. Supported types include screen, board, and radial.');
 end
+
+r = screenXpix/25;
+theta = 0:2*pi/360:2*pi;
+x = r * cos(theta) + screenYpix/2;
+y= r * sin(theta) + screenYpix/2;
+mask = poly2mask(x,y,screenYpix,screenYpix);
+size(mask)
+texture1 = texture1 .* imcomplement(mask) + (mask .* 0.5);
 
 Texture(1) = Screen('MakeTexture', winPtr, texture1);
 Texture(2) = Screen('MakeTexture', winPtr, texture2);
@@ -232,6 +239,7 @@ Screen('FillRect',winPtr, grey);
 % Screen('DrawDots', winPtr, [0;0], fix_dot,black, center, 1);
 Screen('DrawLines', winPtr, allCoords,...
     width_pix, fix_color, [center(1) center(2)]);
+% Screen( 'DrawTexture', winPtr, Texture(1) );
 Screen('Flip',winPtr);
 ListenChar(2);
 %HideCursor;
@@ -251,6 +259,7 @@ disp(['Trigger received - ' params.startDateTime]);
 blockNum = 0;
 timings = [1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000];
 latency = 0;
+params.onset = nan(4,(p.Results.scanDur/p.Results.blockDur));
 % randomly select a stimulus frequency to start with
 whichFreq = randi(length(freqs));
 stimFreq = freqs(whichFreq);
@@ -271,6 +280,7 @@ try
             else
                 latency = 0;
             end
+            
             fix_color = green;
             
             % baseline
@@ -279,6 +289,9 @@ try
             Screen('DrawLines', winPtr, allCoords,...
                     width_pix, fix_color, [center(1) center(2)]);
             Screen('Flip',winPtr,0,1);
+            params.onset(1,thisBlock) = GetSecs; % ISI
+            params.onset(2,thisBlock) = GetSecs; % green cross
+            params.onset(4,thisBlock) = latency/1000; % red cross
             pause(0.5);
 
             % Every sixth block, set stimFreq = 0. Will display gray screen
@@ -291,7 +304,7 @@ try
 %             elseif ~isempty(dir(fullfile(subjectPath,'stimLog','nextStim*'))) && dir(fullfile(subjectPath,'stimLog','nextStim*')).bytes ~= stimFileSize
 
 %                 d = dir(fullfile(subjectPath,'stimLog','nextStim*'));
-                stimFile = fullfile(subjectPath,'stims','suggestions.txt');
+                stimFile = fullfile(subjectPath,'stims',strcat('run',num2str(run)),'suggestions.txt');
 %                 [~,idx] = max([d.datenum]);
 %                 filename = d(idx).name;
 %                 nextStimNum = sscanf(filename,'%d');
@@ -356,6 +369,8 @@ try
                 circle = x.^2 + y.^2 <= xylim^2;
                 checks = circle .* checks + grey * ~circle;
                 texture1 = checks;
+                % apply mask
+                texture1 = texture1 .* imcomplement(mask) + (mask .* 0.5);
                 Texture(1) = Screen('MakeTexture', winPtr, texture1);
             end
             
@@ -367,6 +382,7 @@ try
                 Screen( 'DrawTexture', winPtr, Texture(1) );
                 Screen('Flip',winPtr,0,1);
                 curFrame = GetSecs - startTime;
+                params.onset(3,thisBlock) = GetSecs; % checkerboard
             end
         % The gray screen case.
         else
@@ -374,7 +390,7 @@ try
             Screen('Flip', winPtr,0,1);
         end
         
-        if latency ~= 0 && GetSecs-trialStart >= latency/1000
+        if latency ~= 0 && GetSecs-trialStart >= latency/1000 && GetSecs-trialStart < (latency+50)/1000
             fix_color = red;
         else
             fix_color = green;
@@ -395,7 +411,7 @@ try
 
     % Close screen and save data.
     sca;
-   % save(fullfile(subjectPath,'stims',strcat('stimFreqData_Run',run,'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
+    save(fullfile(subjectPath,'stims',strcat('run',num2str(run)),strcat('stimFreqData_Run',run,'_',datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     disp(['elapsedTime = ' num2str(elapsedTime)]);
     ListenChar(1);
     ShowCursor;
@@ -403,7 +419,7 @@ try
 
 catch ME
     Screen('CloseAll');
-   % save(fullfile(subjectPath,'stims',strcat('stimFreqData_Run',run,datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
+    save(fullfile(subjectPath,'stims',strcat('run',num2str(run)),strcat('stimFreqData_Run',run,datestr(now,'mm_dd_yyyy_HH_MM'))),'params');
     ListenChar;
     ShowCursor;
     rethrow(ME);
