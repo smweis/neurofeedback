@@ -12,6 +12,7 @@
 		"update": "",
 		"url": ""
 	},
+
 	{
 		"flavor": "",
 		"hook": "",
@@ -25,18 +26,19 @@
 		"update": "",
 		"url": ""
 	},
+
 	{
 		"flavor": "",
 		"hook": "",
 		"importance": "",
 		"localHookTemplate": "",
-		"name": "bads",
+		"name": "rtfmri",
 		"pathPlacement": "append",
 		"subfolder": "",
 		"toolboxRoot": "",
 		"type": "git",
 		"update": "",
-		"url": "https:\/\/github.com\/lacerbi\/bads.git"
+		"url": "https:\/\/github.com\/smweis\/rtfmri.git"
 	},
 
 {
@@ -65,6 +67,7 @@
 		"update": "",
 		"url": ""
 	},
+
  	{
 		"flavor": "",
 		"hook": "",

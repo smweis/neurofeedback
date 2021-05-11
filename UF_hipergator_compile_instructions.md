@@ -1,8 +1,8 @@
-## Instructions to compile and run the [doe,watson]Simulate.m scripts for UF hipergator
+## Instructions to compile and run the simulate.m scripts for UF hipergator
 
 1. Log into Hipergator.
 2. Create a directory in which to run things from and save output.
-Suggested: `/ufrc/stevenweisberg/stevenweisberg/qpFmriResults/compiled[date]`
+Suggested: `/blue/stevenweisberg/stevenweisberg/qpFmriResults/compiled[date]`
 3. Git pull the latest version of the code and make sure you're on the branch you need.  
 4. Load Matlab: `ml matlab` and open matlab `matlab`
 5. Load the project with ToolboxToolbox and compile the code.

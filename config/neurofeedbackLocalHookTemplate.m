@@ -27,90 +27,60 @@ if (ispref(projectName))
     rmpref(projectName);
 end
 
-%% Specify base paths for materials and data
-% currentSubjectBasePath: current subject directory on the local machine. 
-% projectBasePath: directory containing neurofeedback toolbox code and data
-
-[~, userID] = system('whoami');
-userID = strtrim(userID);
-switch userID
-    case {'iron'}
-        currentSubjectBasePath = [filesep 'Users' filesep, userID filesep 'Documents' filesep 'rtQuest'];
-        projectBasePath = [filesep 'Users' filesep userID filesep 'Documents' filesep 'MATLAB' filesep 'projects' filesep projectName];
-    case {'stevenweisberg'}
-        currentSubjectBasePath = [filesep 'blue' filesep, userID filesep 'rtQuest'];
-        projectBasePath = [filesep 'blue' filesep userID filesep userID filesep 'MATLAB' filesep 'projects' filesep projectName];
-        analysisScratchDir = [filesep 'blue' filesep 'stevenweisberg' filesep userID filesep 'analysisScratch'];
-    otherwise
-        currentSubjectBasePath = [filesep 'blue' filesep, 'stevenweisberg' filesep 'rtQuest'];
-        projectBasePath = [filesep 'blue' filesep 'stevenweisberg' filesep userID filesep 'MATLAB' filesep 'projects' filesep projectName];
-        analysisScratchDir = [filesep 'blue' filesep 'stevenweisberg' filesep userID filesep 'analysisScratch'];
-end
-
 
 %% Generate a parallel pool of workers, based on the number of logical cores on your system
 % To find out how many you have look at logical cores: 
 % feature('numCores'); 
 
-% first check if one is running, then create one if not
-nfPool = gcp('nocreate');
-if size(nfPool) == 0
-    nfPool = parpool(8);
-end
 
-%% Try to log into the scanner computer
-% At Penn, get this information from Mark Elliot
-username = 'dummy';
-password = 'dummy';
-serverIP = 'dummy';
-
-mountPoint = '/tmp/realTime';
-mkdir(mountPoint);
-command = ['mount -t smbfs //' username ':' password '@' serverIP filesep 'rtexport ' mountPoint];
-
-status = system(command);
-if status == 0
-    fprintf(strcat('Success, server mounted at: ',mountPoint));
-    scannerBasePath = [mountPoint filesep 'RTexport_Current' filesep];
-  
-else
-    fprintf('No server access. Test data path enabled.');
-    scannerBasePath = currentSubjectBasePath;
-end
-
-
-%% Specify where output goes
+%% Automatically sort out paths
 % These prefs are used by the real-time fMRI pipeline and are all on the
 % local machine. 
 
-if ismac
-    % Code to run on Mac plaform
-    setpref(projectName,'analysisScratchDir',[filesep 'tmp' filesep 'neurofeedback']);
-    setpref(projectName,'projectRootDir',projectBasePath);
-    setpref(projectName,'currentSubjectBasePath', currentSubjectBasePath);
-    setpref(projectName,'scannerBasePath',scannerBasePath);
-    
-    % SET FSL Directory
-    fsl_path = [filesep 'usr' filesep 'local' filesep 'fsl' filesep];
-    setenv('FSLDIR',fsl_path);
-    setenv('FSLOUTPUTTYPE','NIFTI_GZ');
-    curpath = getenv('PATH');
-    setenv('PATH',sprintf('%s:%s',fullfile(fsl_path,'bin'),curpath));
+[~, userID] = system('whoami');
+userID = strtrim(userID);
 
-elseif isunix
-    % Code to run on Linux plaform
-    setpref(projectName,'analysisScratchDir',analysisScratchDir);
-    setpref(projectName,'projectRootDir',projectBasePath);
-    setpref(projectName,'currentSubjectBasePath', currentSubjectBasePath);
-    setpref(projectName,'scannerBasePath',scannerBasePath);
-    
-    % Load packages for data analysis on Hipergator. 
-    system('module load mricrogl');
-    system('module load fsl');
-    
-elseif ispc
-    % Code to run on Windows platform
-    warning('No support for PC')
+if IsWindows
+    userID = strsplit(userID,'\');
+    userID = userID{2};
+    baseDir = strcat('C:/Users/',userID,'/Documents/');
 else
-    disp('What are you using?')
+    baseDir = strcat('/blue/stevenweisberg/');
+    % Load packages for data analysis on Hipergator. 
+    system('ml mricrogl');
+    system('ml fsl');
+end
+
+paths = struct;
+
+% scannerBasePath is the main directory where the scanner will drop files.
+paths.scannerBase = fullfile(baseDir,'blue',...,
+    'share','rtfmri_incoming');
+
+% projectBasePath is where the Matlab directories are.
+paths.projectBase = fullfile(baseDir,'MATLAB','projects',projectName);
+
+% currentSubjectBasePath will load in the new currentSubjectData
+paths.currentSubjectBase = fullfile(baseDir,'blue','rtQuest');
+
+% scratch is just for temporary storage.
+paths.scratch = fullfile(paths.scannerBase,'scratch');
+
+% Add all path names to the path
+pathNames = fieldNames(paths);
+for i = 1:length(pathNames)
+    path = paths.(pathNames{i});
+    if ~isfolder(path)
+        mkdir(path);    
+    end
+    addpath(path);
+end
+
+cd(paths.scannerBase);
+
+setpref(projectName,'analysisScratchDir',paths.scratch);
+setpref(projectName,'projectRootDir',paths.projectBase);
+setpref(projectName,'currentSubjectBasePath',paths.currentSubjectBase);
+setpref(projectName,'scannerBasePath',paths.scannerBase);
+
 end
