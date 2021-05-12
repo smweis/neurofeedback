@@ -59,6 +59,7 @@ runStimulusSequence(subject,run)
 %}
 
 %% Parse input
+debug = 0;
 p = inputParser;
 
 % Required input
@@ -77,6 +78,9 @@ p.addParameter('displayHeight',39.2257,@isnumeric);
 p.addParameter('baselineTrialFrequency',6,@isnumeric);
 p.addParameter('tChar','t',@isstr);
 
+if ~debug
+    varargin = param();
+end
 % Parse
 % p.parse( subject, run, atScanner, model, varargin{:});
 p.parse( subject, run, type, varargin{:});
