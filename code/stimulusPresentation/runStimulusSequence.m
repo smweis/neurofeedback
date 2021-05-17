@@ -1,4 +1,4 @@
-function params = runStimulusSequence(subject,run,type,varargin)
+function params = runStimulusSequence(type,varargin)
 
 % Run the stimulus sequence at the scanner.
 %
@@ -58,13 +58,22 @@ runStimulusSequence(subject,run)
 %
 %}
 
+%% Load global parameters
+fid = fopen("/blue/stevenweisberg/rtQuest/rtQuest/derivatives/realTime/global.json");
+raw = fread(fid,inf);
+str = char(raw');
+fclose(fid);
+global_params = jsondecode(str);
+
+subject = global_params.subject;
+run = global_params.run;
 %% Parse input
 debug = 0;
 p = inputParser;
 
 % Required input
-p.addRequired('subject',@isstr);
-p.addRequired('run',@isstr);
+% p.addRequired('subject',@isstr);
+% p.addRequired('run',@isstr);
 p.addRequired('type',@isstr);
 
 % Optional params
@@ -83,7 +92,7 @@ if ~debug
 end
 % Parse
 % p.parse( subject, run, atScanner, model, varargin{:});
-p.parse( subject, run, type, varargin{:});
+p.parse(type, varargin{:});
 
 display = struct;
 display.distance = p.Results.displayDistance;
@@ -119,7 +128,6 @@ else
 end
 
 
-run = p.Results.run;
 
 %% Save input variables
 params.stimFreq                 = nan(1,p.Results.scanDur/p.Results.blockDur);
