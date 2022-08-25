@@ -1,4 +1,4 @@
-function params = runStimulusSequence(type,varargin)
+function params = runStimulusSequence(subject, run, type, out_dir, varargin)
 
 % Run the stimulus sequence at the scanner.
 %
@@ -41,7 +41,6 @@ function params = runStimulusSequence(type,varargin)
 % Examples:
 
 %{
-
 1. Sanity Check
 subject = 'sub-102';
 run = '1';
@@ -49,34 +48,27 @@ type = 'radial';
 checkerboardSize = 0;
 allFreqs = 15;
 baselineTrialFrequency = 2;
-runStimulusSequence(subject,run,type,'checkerboardSize',checkerboardSize,'allFreqs',allFreqs,'baselineTrialFrequency',baselineTrialFrequency);
+debug = false;
 
-1. Q+ Setup
-subject = 'Ozzy_Test';
-run = '1';
-runStimulusSequence(subject,run)
-%
+out_dir = 'CHANGE ME';
+
+out_dir = 'C:\Users\smwei\Desktop\Splash\test';
+sca;
+runStimulusSequence(subject,run,type,out_dir,'checkerboardSize',checkerboardSize,'allFreqs',allFreqs,'baselineTrialFrequency',baselineTrialFrequency,'debug',debug);
+
 %}
 
-%% Load global parameters
-fid = fopen("/blue/stevenweisberg/rtQuest/rtQuest/derivatives/realTime/global.json");
-raw = fread(fid,inf);
-str = char(raw');
-fclose(fid);
-global_params = jsondecode(str);
-
-subject = global_params.subject;
-run = global_params.run;
 %% Parse input
-debug = 0;
 p = inputParser;
 
 % Required input
-% p.addRequired('subject',@isstr);
-% p.addRequired('run',@isstr);
-p.addRequired('type',@isstr);
+p.addRequired('subject',@ischar);
+p.addRequired('run',@ischar);
+p.addRequired('type',@ischar);
+p.addRequired('out_dir',@ischar);
 
 % Optional params
+p.addParameter('debug',false, @islogical)
 p.addParameter('checkerboardSize',60,@isnumeric); % 60 = checker; 0 = screen flash
 p.addParameter('allFreqs',[1.875,3.75,7.5,15,30],@isvector);
 p.addParameter('blockDur',7.5,@isnumeric);
@@ -85,43 +77,29 @@ p.addParameter('displayDistance',106.5,@isnumeric);
 p.addParameter('displayWidth',69.7347,@isnumeric);
 p.addParameter('displayHeight',39.2257,@isnumeric);
 p.addParameter('baselineTrialFrequency',6,@isnumeric);
-p.addParameter('tChar','t',@isstr);
+p.addParameter('tChar','t',@ischar);
 
-if ~debug
-    varargin = param();
-end
+
 % Parse
-% p.parse( subject, run, atScanner, model, varargin{:});
-p.parse(type, varargin{:});
+p.parse( subject, run, type, out_dir, varargin{:});
 
 display = struct;
 display.distance = p.Results.displayDistance;
 display.width = p.Results.displayWidth;
 display.height = p.Results.displayHeight;
 
-%% Get Relevant Paths
+%% Get Relevant Paths   
 
-[bidsPath, scannerPath, ~, ~, ~,subjectPath] = getPaths(subject, 'neurofeedback');
+subjectPath = fullfile(out_dir,subject);
+mkdir(subjectPath);
 
-%% TO DO BEFORE WE RUN THIS AGAIN
-    %1.  Change the way baseline trials are handled so that we can use 200 as
-    %       a "detect baseline".
-    %2.  Perhaps also ensure that we present a baseline trial every X trials,
-    %       if one has not already been presented by Quest+
-    %3.  Change where actualStimuli.txt is stored.
-    %4.  Change where nextStimuli[num].txt is stored.
-    %5.  Both 3 and 4 could be solved by changing subjectPath to some
-    %       scannerPath where scannerPath is a directory on the actual scanner
-    %       computer.
-
-
+mkdir(fullfile(subjectPath,'stims',strcat('run',num2str(run))));
 
 %% Debugging?
 % This will make the window extra small so you can test while still looking
 % at the code.
-debug = 1;
 
-if debug
+if p.Results.debug
     stimWindow = [10 10 200 200];
 else
     stimWindow = [];
@@ -135,12 +113,6 @@ params.trialTypeStrings         = cell(1,length(params.stimFreq));
 params.p.Results.allFreqs       = p.Results.allFreqs;
 params.checkerboardOrFullscreen = p.Results.checkerboardSize;
 
-%% Set up actualStimuli.txt
-% A text file that will serve as a record for all stimuli frequencies
-% presented during this run number.
-actualStimuliTextFile = fullfile(subjectPath,'stims',strcat('run',num2str(run)),strcat('actualStimuli',run,'.txt'));
-fid = fopen(actualStimuliTextFile,'w');
-fclose(fid);
 
 %% Initial settings
 PsychDefaultSetup(2);
@@ -312,28 +284,15 @@ try
             params.onset(4,thisBlock) = latency/1000; % red cross
             pause(0.5);
 
-            % load in stimulus suggestions
-            stimFile = fullfile(subjectPath,'stims',strcat('run',num2str(run)),'suggestions.txt');
-            trialTypeString = 'QUEST+';
-
-            readFid = fopen(stimFile,'r');
-            while ~feof(readFid)
-                line = fgetl(readFid);
-                disp(line);
+            if mod(blockNum,p.Results.baselineTrialFrequency) ~= 0
+                stimFreq = randsample(freqs,1);
+            else
+                stimFreq = baseline;
             end
-            stimFreq = str2double(line);
-            fclose(readFid);
-
-            % Write the stimulus that was presented to a text file so that
-            % Quest+ can see what's actually been presented.
-
-            fid = fopen(actualStimuliTextFile,'a');
-            fprintf(fid,'%d\n',stimFreq);
-            fclose(fid);
-
+            
             % Print the last trial info to the terminal and save it to
             % params.
-            disp(['Trial Type - ' trialTypeString]);
+      
             if strcmp(type,'radial')
                 disp(['Trial Number - ' num2str(blockNum) '; Contrast - ' num2str(stimFreq)]);
             else
@@ -341,8 +300,6 @@ try
             end
 
             params.stimFreq(thisBlock) = stimFreq;
-            params.trialTypeStrings{thisBlock} = trialTypeString;
-
         end
 
 
